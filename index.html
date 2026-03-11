@@ -1,0 +1,1413 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stock Buy Plan Manager</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .header p {
+        font-size: 1.1em;
+        opacity: 0.9;
+      }
+
+      .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        padding: 30px;
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+      }
+
+      .summary-card {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        transition: transform 0.3s;
+      }
+
+      .summary-card:hover {
+        transform: translateY(-5px);
+      }
+
+      .summary-card h3 {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .summary-card .amount {
+        font-size: 2em;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .summary-card.required .amount {
+        color: #f5576c;
+      }
+
+      .summary-card.invested .amount {
+        color: #4caf50;
+      }
+
+      .summary-card.pending .amount {
+        color: #ff9800;
+      }
+
+      .summary-card.india-total .amount {
+        color: #e65100;
+      }
+
+      .summary-card.us-total .amount {
+        color: #1565c0;
+      }
+
+      .tabs {
+        display: flex;
+        background: #f5f5f5;
+        padding: 0 30px;
+        border-bottom: 2px solid #ddd;
+      }
+
+      .tab {
+        padding: 15px 30px;
+        cursor: pointer;
+        border: none;
+        background: none;
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #666;
+        transition: all 0.3s;
+        border-bottom: 3px solid transparent;
+      }
+
+      .tab.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+        background: white;
+      }
+
+      .tab:hover {
+        color: #667eea;
+      }
+
+      .content {
+        padding: 30px;
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .add-stock-section {
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        padding: 25px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+      }
+
+      .add-stock-section h2 {
+        margin-bottom: 20px;
+        color: #333;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-group label {
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #555;
+        font-size: 0.9em;
+      }
+
+      .form-group input {
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 1em;
+        transition: border-color 0.3s;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .btn {
+        padding: 12px 30px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        padding: 8px 20px;
+        font-size: 0.9em;
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        color: white;
+        padding: 8px 20px;
+        font-size: 0.9em;
+      }
+
+      .btn-info {
+        background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);
+        color: white;
+        padding: 8px 20px;
+        font-size: 0.9em;
+      }
+
+      .stocks-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 10px;
+      }
+
+      .stocks-table thead th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85em;
+        letter-spacing: 1px;
+      }
+
+      .stocks-table thead th:first-child {
+        border-radius: 10px 0 0 10px;
+      }
+
+      .stocks-table thead th:last-child {
+        border-radius: 0 10px 10px 0;
+      }
+
+      .stock-row {
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .stock-row td {
+        padding: 15px;
+        border-top: 1px solid #f0f0f0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .stock-row td:first-child {
+        border-left: 1px solid #f0f0f0;
+        border-radius: 10px 0 0 10px;
+        font-weight: 700;
+        color: #333;
+      }
+
+      .stock-row td:last-child {
+        border-right: 1px solid #f0f0f0;
+        border-radius: 0 10px 10px 0;
+      }
+
+      .price-row {
+        background: #fafafa;
+      }
+
+      .price-row td {
+        padding: 12px 15px;
+        font-size: 0.95em;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .status-wait {
+        background: #ff9800;
+        color: white;
+      }
+
+      .status-buy {
+        background: #4caf50;
+        color: white;
+        animation: pulse 2s infinite;
+      }
+
+      .status-done {
+        background: #9e9e9e;
+        color: white;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .current-price {
+        font-weight: 700;
+        color: #667eea;
+        font-size: 1.1em;
+      }
+
+      .loading {
+        color: #999;
+        font-style: italic;
+      }
+
+      .error {
+        color: #f44336;
+        font-size: 0.9em;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+      }
+
+      .empty-state svg {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 20px;
+        opacity: 0.3;
+      }
+
+      .empty-state h3 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+      }
+
+      .api-key-section {
+        background: #fff3cd;
+        border: 2px solid #ffc107;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+      }
+
+      .api-key-section h4 {
+        margin-bottom: 10px;
+        color: #856404;
+      }
+
+      .api-key-section input {
+        width: 100%;
+        max-width: 500px;
+        padding: 10px;
+        border: 2px solid #ffc107;
+        border-radius: 5px;
+        margin-right: 10px;
+      }
+
+      .api-key-section .btn {
+        padding: 10px 20px;
+      }
+
+      .refresh-prices {
+        float: right;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 10px 20px;
+        margin-bottom: 15px;
+      }
+
+      .csv-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
+      }
+
+      .btn-secondary {
+        background: linear-gradient(135deg, #606c88 0%, #3f4c6b 100%);
+        color: white;
+        padding: 10px 20px;
+      }
+
+      .file-input-hidden {
+        display: none;
+      }
+
+      @media (max-width: 768px) {
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-cards {
+          grid-template-columns: 1fr;
+        }
+
+        .stocks-table {
+          font-size: 0.85em;
+        }
+
+        .action-buttons {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>📈 Stock Buy Plan Manager</h1>
+        <p>Smart planning for your investment journey</p>
+      </div>
+
+      <div class="summary-cards">
+        <div class="summary-card required">
+          <h3>💰 Total Required</h3>
+          <div class="amount" id="totalRequired">₹0</div>
+        </div>
+        <div class="summary-card invested">
+          <h3>✅ Total Invested</h3>
+          <div class="amount" id="totalInvested">₹0</div>
+        </div>
+        <div class="summary-card pending">
+          <h3>⏳ Pending Orders</h3>
+          <div class="amount" id="pendingOrders">0</div>
+        </div>
+        <div class="summary-card india-total">
+          <h3>🇮🇳 India Total</h3>
+          <div class="amount" id="indiaTotalAmount">₹0</div>
+        </div>
+        <div class="summary-card us-total">
+          <h3>🇺🇸 US Total</h3>
+          <div class="amount" id="usTotalAmount">$0</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('india')">
+          🇮🇳 India (NSE/BSE)
+        </button>
+        <button class="tab" onclick="switchTab('us')">🇺🇸 US Markets</button>
+      </div>
+
+      <div class="content">
+        <!-- India Tab -->
+        <div class="tab-content active" id="india-tab">
+          <div class="api-key-section">
+            <h4>📡 Stock Price API Configuration</h4>
+            <p style="margin-bottom: 10px; color: #856404; font-size: 0.9em">
+              Using <strong>Yahoo Finance</strong> — No API key needed!
+              Unlimited real-time quotes.
+            </p>
+            <p
+              id="indiaApiStatus"
+              style="margin-top: 10px; color: #856404; font-size: 0.85em"
+            ></p>
+          </div>
+
+          <div class="add-stock-section">
+            <h2>➕ Add New Stock Entry</h2>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Stock Symbol/Name</label>
+                <input
+                  type="text"
+                  id="indiaStockName"
+                  placeholder="e.g., TCS.NS or RELIANCE.NS"
+                />
+              </div>
+              <div class="form-group">
+                <label>Expected Buy Price (₹)</label>
+                <input
+                  type="number"
+                  id="indiaExpectedPrice"
+                  placeholder="0.00"
+                  step="0.01"
+                />
+              </div>
+              <div class="form-group">
+                <label>Quantity</label>
+                <input
+                  type="number"
+                  id="indiaQuantity"
+                  placeholder="0"
+                  step="1"
+                />
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="addStock('india')">
+              Add to Plan
+            </button>
+          </div>
+
+          <button class="btn refresh-prices" onclick="refreshPrices('india')">
+            🔄 Refresh Prices
+          </button>
+          <div class="csv-actions">
+            <button
+              class="btn btn-secondary"
+              onclick="exportMarketCsv('india')"
+            >
+              ⬇ Export CSV
+            </button>
+            <button class="btn btn-secondary" onclick="triggerImport('india')">
+              ⬆ Import CSV
+            </button>
+            <input
+              class="file-input-hidden"
+              type="file"
+              id="indiaCsvInput"
+              accept=".csv,text/csv"
+              onchange="importMarketCsv('india', event)"
+            />
+          </div>
+          <div style="clear: both"></div>
+
+          <div id="indiaStocksList"></div>
+        </div>
+
+        <!-- US Tab -->
+        <div class="tab-content" id="us-tab">
+          <div class="api-key-section">
+            <h4>📡 Stock Price API Configuration</h4>
+            <p style="margin-bottom: 10px; color: #856404; font-size: 0.9em">
+              Using <strong>Yahoo Finance</strong> — No API key needed!
+              Unlimited real-time quotes.
+            </p>
+            <p
+              id="usApiStatus"
+              style="margin-top: 10px; color: #856404; font-size: 0.85em"
+            ></p>
+          </div>
+
+          <div class="add-stock-section">
+            <h2>➕ Add New Stock Entry</h2>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Stock Symbol</label>
+                <input
+                  type="text"
+                  id="usStockName"
+                  placeholder="e.g., AAPL, MSFT, GOOGL"
+                />
+              </div>
+              <div class="form-group">
+                <label>Expected Buy Price ($)</label>
+                <input
+                  type="number"
+                  id="usExpectedPrice"
+                  placeholder="0.00"
+                  step="0.01"
+                />
+              </div>
+              <div class="form-group">
+                <label>Quantity</label>
+                <input
+                  type="number"
+                  id="usQuantity"
+                  placeholder="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="addStock('us')">
+              Add to Plan
+            </button>
+          </div>
+
+          <button class="btn refresh-prices" onclick="refreshPrices('us')">
+            🔄 Refresh Prices
+          </button>
+          <div class="csv-actions">
+            <button class="btn btn-secondary" onclick="exportMarketCsv('us')">
+              ⬇ Export CSV
+            </button>
+            <button class="btn btn-secondary" onclick="triggerImport('us')">
+              ⬆ Import CSV
+            </button>
+            <input
+              class="file-input-hidden"
+              type="file"
+              id="usCsvInput"
+              accept=".csv,text/csv"
+              onchange="importMarketCsv('us', event)"
+            />
+          </div>
+          <div style="clear: both"></div>
+
+          <div id="usStocksList"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Data structure
+      let stocks = {
+        india: {},
+        us: {},
+      };
+
+      let apiKeys = {
+        india: "",
+        us: "",
+      };
+
+      function ensureProxyTemplateConfigured() {
+        const existing = (
+          localStorage.getItem("stockProxyTemplate") || ""
+        ).trim();
+        if (existing) {
+          return;
+        }
+
+        if (window.location.hostname === "stockplanner.codermani.in") {
+          localStorage.setItem(
+            "stockProxyTemplate",
+            `${window.location.origin}/api/proxy?url={url}`,
+          );
+        }
+      }
+
+      // Load data from localStorage
+      function loadData() {
+        ensureProxyTemplateConfigured();
+
+        const savedStocks = localStorage.getItem("stockBuyPlan");
+        const savedApiKeys = localStorage.getItem("apiKeys");
+
+        if (savedStocks) {
+          stocks = JSON.parse(savedStocks);
+        }
+
+        if (savedApiKeys) {
+          apiKeys = JSON.parse(savedApiKeys);
+          const indiaApiKeyInput = document.getElementById("indiaApiKey");
+          const usApiKeyInput = document.getElementById("usApiKey");
+          if (indiaApiKeyInput) {
+            indiaApiKeyInput.value = apiKeys.india || "";
+          }
+          if (usApiKeyInput) {
+            usApiKeyInput.value = apiKeys.us || "";
+          }
+        }
+      }
+
+      // Save data to localStorage
+      function saveData() {
+        localStorage.setItem("stockBuyPlan", JSON.stringify(stocks));
+        localStorage.setItem("apiKeys", JSON.stringify(apiKeys));
+      }
+
+      // Save API key
+      function saveApiKey(market) {
+        const input = document.getElementById(`${market}ApiKey`);
+        if (!input) {
+          return;
+        }
+
+        const key = input.value.trim();
+        apiKeys[market] = key;
+        saveData();
+        setApiStatus(market, "API key saved.", false);
+        alert(`API key saved for ${market} market!`);
+      }
+
+      function setApiStatus(market, message, isError = false) {
+        const el = document.getElementById(`${market}ApiStatus`);
+        if (!el) {
+          return;
+        }
+        el.textContent = message;
+        el.style.color = isError ? "#f44336" : "#856404";
+      }
+
+      function getProxyCandidates(url) {
+        // For production hosting, prefer your own proxy. Supported formats:
+        // 1) Full template with {url}, e.g. https://your-proxy.example.com/fetch?url={url}
+        // 2) Base URL, e.g. https://your-proxy.example.com/proxy
+        const configuredTemplate =
+          (window.STOCK_PROXY_TEMPLATE || "").trim() ||
+          (localStorage.getItem("stockProxyTemplate") || "").trim();
+
+        const candidates = [];
+
+        if (configuredTemplate) {
+          if (configuredTemplate.includes("{url}")) {
+            candidates.push({
+              name: "configured-proxy-template",
+              url: configuredTemplate.replace("{url}", encodeURIComponent(url)),
+            });
+          } else {
+            const base = configuredTemplate.replace(/\/+$/, "");
+            candidates.push({
+              name: "configured-proxy-base",
+              url: `${base}/${url}`,
+            });
+            candidates.push({
+              name: "configured-proxy-query",
+              url: `${base}?url=${encodeURIComponent(url)}`,
+            });
+          }
+        }
+
+        candidates.push(
+          {
+            name: "direct",
+            url,
+          },
+          {
+            name: "corsproxy.io",
+            url: `https://corsproxy.io/?${encodeURIComponent(url)}`,
+          },
+          {
+            name: "allorigins",
+            url: `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+          },
+          {
+            name: "isomorphic-git",
+            url: `https://cors.isomorphic-git.org/${url}`,
+          },
+        );
+
+        return candidates;
+      }
+
+      async function fetchJsonWithCorsFallback(url) {
+        const candidates = getProxyCandidates(url);
+        let lastError = null;
+
+        for (const candidate of candidates) {
+          try {
+            const response = await fetch(candidate.url, {
+              headers: {
+                Accept: "application/json,text/plain,*/*",
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error(`${candidate.name} HTTP ${response.status}`);
+            }
+
+            const text = await response.text();
+            try {
+              return JSON.parse(text);
+            } catch (parseError) {
+              throw new Error(`${candidate.name} returned non-JSON response`);
+            }
+          } catch (error) {
+            lastError = error;
+            console.warn(`Price fetch failed via ${candidate.name}:`, error);
+          }
+        }
+
+        throw new Error(
+          `All price fetch routes failed. Last error: ${
+            lastError ? lastError.message : "Unknown error"
+          }`,
+        );
+      }
+
+      // Switch tabs
+      function switchTab(tabName) {
+        // Update tab buttons
+        document
+          .querySelectorAll(".tab")
+          .forEach((tab) => tab.classList.remove("active"));
+        event.target.classList.add("active");
+
+        // Update tab content
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((content) => content.classList.remove("active"));
+        document.getElementById(`${tabName}-tab`).classList.add("active");
+
+        // Update display
+        renderStocks(tabName);
+        updateSummary();
+      }
+
+      // Add stock
+      function addStock(market) {
+        const stockName = document
+          .getElementById(`${market}StockName`)
+          .value.trim()
+          .toUpperCase();
+        const expectedPrice = parseFloat(
+          document.getElementById(`${market}ExpectedPrice`).value,
+        );
+        const quantityInput = document.getElementById(
+          `${market}Quantity`,
+        ).value;
+        const quantity =
+          market === "us"
+            ? parseFloat(quantityInput)
+            : parseInt(quantityInput, 10);
+
+        if (!stockName || !expectedPrice || !quantity) {
+          alert("Please fill in all fields!");
+          return;
+        }
+
+        if (market === "india" && !Number.isInteger(quantity)) {
+          alert("India market quantity must be a whole number.");
+          return;
+        }
+
+        if (!stocks[market][stockName]) {
+          stocks[market][stockName] = {
+            name: stockName,
+            currentPrice: null,
+            entries: [],
+          };
+        }
+
+        stocks[market][stockName].entries.push({
+          expectedPrice: expectedPrice,
+          quantity: quantity,
+          bought: false,
+          id: Date.now(),
+        });
+
+        // Clear inputs
+        document.getElementById(`${market}StockName`).value = "";
+        document.getElementById(`${market}ExpectedPrice`).value = "";
+        document.getElementById(`${market}Quantity`).value = "";
+
+        saveData();
+        renderStocks(market);
+        updateSummary();
+        fetchStockPrice(stockName, market);
+      }
+
+      // Yahoo Finance accepts symbols as-is, including .NS, .BSE, etc.
+      function getYahooSymbol(symbol) {
+        return symbol.trim().toUpperCase();
+      }
+
+      // Fetch stock price from Yahoo Finance
+      async function fetchStockPrice(symbol, market) {
+        try {
+          const yahooSymbol = getYahooSymbol(symbol);
+          const data = await fetchJsonWithCorsFallback(
+            `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}`,
+          );
+
+          if (
+            !data ||
+            !data.chart ||
+            !data.chart.result ||
+            data.chart.result.length === 0
+          ) {
+            console.warn(`No data found for ${symbol}`);
+            setApiStatus(
+              market,
+              `No price found for ${symbol}. Try ${symbol}.NS for India stocks.`,
+              true,
+            );
+            return;
+          }
+
+          const result = data.chart.result[0];
+          const meta = result && result.meta;
+          const rawPrice = meta && meta.regularMarketPrice;
+          const price = parseFloat(rawPrice);
+
+          if (Number.isFinite(price) && price > 0) {
+            stocks[market][symbol].currentPrice = parseFloat(price.toFixed(2));
+            saveData();
+            renderStocks(market);
+            setApiStatus(
+              market,
+              `Price updated for ${symbol}: ${price.toFixed(2)}`,
+            );
+            return;
+          }
+
+          console.warn(`No valid price found for ${symbol}`);
+          setApiStatus(
+            market,
+            `No price found for ${symbol}. Check symbol spelling.`,
+            true,
+          );
+        } catch (error) {
+          console.error("Error fetching price:", error);
+          setApiStatus(
+            market,
+            "Could not fetch price due to CORS/proxy restrictions. Configure STOCK_PROXY_TEMPLATE for reliable hosted usage.",
+            true,
+          );
+        }
+      }
+
+      // Refresh all prices
+      async function refreshPrices(market) {
+        const stockSymbols = Object.keys(stocks[market]);
+
+        if (stockSymbols.length === 0) {
+          alert("No stocks to refresh!");
+          return;
+        }
+
+        for (const symbol of stockSymbols) {
+          await fetchStockPrice(symbol, market);
+          await new Promise((resolve) => setTimeout(resolve, 500)); // Yahoo Finance: no rate limits
+        }
+      }
+
+      // Mark as bought
+      function markAsBought(market, stockName, entryId) {
+        const stock = stocks[market][stockName];
+        const entry = stock.entries.find((e) => e.id === entryId);
+
+        if (entry) {
+          entry.bought = true;
+          saveData();
+          renderStocks(market);
+          updateSummary();
+        }
+      }
+
+      // Edit stock symbol, target price, and quantity for an entry.
+      function editEntry(market, encodedStockName, entryId) {
+        const stockName = decodeURIComponent(encodedStockName);
+        const currentStock = stocks[market][stockName];
+        if (!currentStock) {
+          alert("Could not find the selected stock entry.");
+          return;
+        }
+
+        const entryIndex = currentStock.entries.findIndex(
+          (e) => String(e.id) === String(entryId),
+        );
+        if (entryIndex === -1) {
+          alert("Could not find the selected row to edit.");
+          return;
+        }
+
+        const entry = currentStock.entries[entryIndex];
+
+        const updatedSymbolInput = prompt("Edit stock symbol:", stockName);
+        if (updatedSymbolInput === null) {
+          return;
+        }
+
+        const updatedSymbol = updatedSymbolInput.trim().toUpperCase();
+        if (!updatedSymbol) {
+          alert("Stock symbol cannot be empty.");
+          return;
+        }
+
+        const updatedTargetInput = prompt(
+          "Edit target price:",
+          String(entry.expectedPrice),
+        );
+        if (updatedTargetInput === null) {
+          return;
+        }
+
+        const updatedTargetPrice = parseFloat(updatedTargetInput);
+        if (!Number.isFinite(updatedTargetPrice) || updatedTargetPrice <= 0) {
+          alert("Please enter a valid target price.");
+          return;
+        }
+
+        const updatedQuantityInput = prompt(
+          "Edit quantity:",
+          String(entry.quantity),
+        );
+        if (updatedQuantityInput === null) {
+          return;
+        }
+
+        const updatedQuantity =
+          market === "us"
+            ? parseFloat(updatedQuantityInput)
+            : parseInt(updatedQuantityInput, 10);
+
+        if (!Number.isFinite(updatedQuantity) || updatedQuantity <= 0) {
+          alert("Please enter a valid quantity.");
+          return;
+        }
+
+        if (market === "india" && !Number.isInteger(updatedQuantity)) {
+          alert("India market quantity must be a whole number.");
+          return;
+        }
+
+        entry.expectedPrice = updatedTargetPrice;
+        entry.quantity = updatedQuantity;
+
+        if (updatedSymbol !== stockName) {
+          currentStock.entries.splice(entryIndex, 1);
+
+          if (currentStock.entries.length === 0) {
+            delete stocks[market][stockName];
+          }
+
+          if (!stocks[market][updatedSymbol]) {
+            stocks[market][updatedSymbol] = {
+              name: updatedSymbol,
+              currentPrice: null,
+              entries: [],
+            };
+          }
+
+          stocks[market][updatedSymbol].entries.push(entry);
+        }
+
+        saveData();
+        renderStocks(market);
+        updateSummary();
+        fetchStockPrice(updatedSymbol, market);
+      }
+
+      // Delete entry
+      function deleteEntry(market, stockName, entryId) {
+        if (!confirm("Are you sure you want to delete this entry?")) {
+          return;
+        }
+
+        const stock = stocks[market][stockName];
+        stock.entries = stock.entries.filter((e) => e.id !== entryId);
+
+        // Remove stock if no entries left
+        if (stock.entries.length === 0) {
+          delete stocks[market][stockName];
+        }
+
+        saveData();
+        renderStocks(market);
+        updateSummary();
+      }
+
+      function csvEscape(value) {
+        const text = String(value ?? "");
+        if (text.includes('"') || text.includes(",") || text.includes("\n")) {
+          return `"${text.replace(/"/g, '""')}"`;
+        }
+        return text;
+      }
+
+      function parseCsvLine(line) {
+        const values = [];
+        let current = "";
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+
+          if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+              current += '"';
+              i++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (ch === "," && !inQuotes) {
+            values.push(current.trim());
+            current = "";
+          } else {
+            current += ch;
+          }
+        }
+
+        values.push(current.trim());
+        return values;
+      }
+
+      function getEntrySignature(symbol, expectedPrice, quantity, bought) {
+        return [
+          symbol,
+          Number(expectedPrice).toFixed(4),
+          Number(quantity).toFixed(4),
+          bought ? "1" : "0",
+        ].join("|");
+      }
+
+      function triggerImport(market) {
+        const input = document.getElementById(`${market}CsvInput`);
+        if (!input) {
+          return;
+        }
+        input.click();
+      }
+
+      function exportMarketCsv(market) {
+        const rows = [["symbol", "expectedPrice", "quantity", "bought"]];
+
+        Object.values(stocks[market]).forEach((stock) => {
+          stock.entries.forEach((entry) => {
+            rows.push([
+              stock.name,
+              Number(entry.expectedPrice).toFixed(2),
+              String(entry.quantity),
+              entry.bought ? "true" : "false",
+            ]);
+          });
+        });
+
+        const csv = rows
+          .map((row) => row.map((cell) => csvEscape(cell)).join(","))
+          .join("\n");
+
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `stock-buy-plan-${market}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+
+      async function importMarketCsv(market, event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) {
+          return;
+        }
+
+        const text = await file.text();
+        const lines = text
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0);
+
+        if (lines.length === 0) {
+          alert("CSV file is empty.");
+          event.target.value = "";
+          return;
+        }
+
+        let startIndex = 0;
+        const firstLineColumns = parseCsvLine(lines[0]).map((c) =>
+          c.toLowerCase(),
+        );
+        if (
+          firstLineColumns[0] === "symbol" &&
+          firstLineColumns[1] === "expectedprice"
+        ) {
+          startIndex = 1;
+        }
+
+        const existingSignatures = new Set();
+        Object.values(stocks[market]).forEach((stock) => {
+          stock.entries.forEach((entry) => {
+            existingSignatures.add(
+              getEntrySignature(
+                stock.name,
+                entry.expectedPrice,
+                entry.quantity,
+                entry.bought,
+              ),
+            );
+          });
+        });
+
+        let imported = 0;
+        let skippedDuplicates = 0;
+        let invalidRows = 0;
+        const symbolsToRefresh = new Set();
+
+        for (let i = startIndex; i < lines.length; i++) {
+          const cols = parseCsvLine(lines[i]);
+          if (cols.length < 3) {
+            invalidRows++;
+            continue;
+          }
+
+          const symbol = String(cols[0] || "")
+            .trim()
+            .toUpperCase();
+          const expectedPrice = parseFloat(cols[1]);
+          const quantity =
+            market === "us" ? parseFloat(cols[2]) : parseInt(cols[2], 10);
+          const bought =
+            cols[3] && String(cols[3]).toLowerCase() === "true" ? true : false;
+
+          if (
+            !symbol ||
+            !Number.isFinite(expectedPrice) ||
+            expectedPrice <= 0
+          ) {
+            invalidRows++;
+            continue;
+          }
+
+          if (!Number.isFinite(quantity) || quantity <= 0) {
+            invalidRows++;
+            continue;
+          }
+
+          if (market === "india" && !Number.isInteger(quantity)) {
+            invalidRows++;
+            continue;
+          }
+
+          const signature = getEntrySignature(
+            symbol,
+            expectedPrice,
+            quantity,
+            bought,
+          );
+
+          if (existingSignatures.has(signature)) {
+            skippedDuplicates++;
+            continue;
+          }
+
+          existingSignatures.add(signature);
+
+          if (!stocks[market][symbol]) {
+            stocks[market][symbol] = {
+              name: symbol,
+              currentPrice: null,
+              entries: [],
+            };
+          }
+
+          stocks[market][symbol].entries.push({
+            expectedPrice,
+            quantity,
+            bought,
+            id: Date.now() + i + imported,
+          });
+
+          imported++;
+          symbolsToRefresh.add(symbol);
+        }
+
+        saveData();
+        renderStocks(market);
+        updateSummary();
+
+        for (const symbol of symbolsToRefresh) {
+          await fetchStockPrice(symbol, market);
+        }
+
+        setApiStatus(
+          market,
+          `Import complete: ${imported} added, ${skippedDuplicates} duplicates skipped, ${invalidRows} invalid rows.`,
+          false,
+        );
+
+        event.target.value = "";
+      }
+
+      // Render stocks
+      function renderStocks(market) {
+        const container = document.getElementById(`${market}StocksList`);
+        const stockSymbols = Object.keys(stocks[market]);
+        const currency = market === "india" ? "₹" : "$";
+
+        if (stockSymbols.length === 0) {
+          container.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+                        </svg>
+                        <h3>No stocks added yet</h3>
+                        <p>Add your first stock using the form above</p>
+                    </div>
+                `;
+          return;
+        }
+
+        let html = '<table class="stocks-table"><thead><tr>';
+        html += "<th>Stock</th>";
+        html += "<th>Current Price</th>";
+        html += "<th>Target Price</th>";
+        html += "<th>Quantity</th>";
+        html += "<th>Total Amount</th>";
+        html += "<th>Status</th>";
+        html += "<th>Actions</th>";
+        html += "</tr></thead><tbody>";
+
+        stockSymbols.forEach((symbol) => {
+          const stock = stocks[market][symbol];
+          const sortedEntries = [...stock.entries].sort((a, b) => {
+            if (a.expectedPrice === b.expectedPrice) {
+              return a.id - b.id;
+            }
+            return b.expectedPrice - a.expectedPrice;
+          });
+          const rowspan = sortedEntries.length;
+
+          sortedEntries.forEach((entry, index) => {
+            const totalAmount = entry.expectedPrice * entry.quantity;
+            const currentPrice = stock.currentPrice;
+
+            let status = "WAIT";
+            let statusClass = "status-wait";
+
+            if (entry.bought) {
+              status = "DONE";
+              statusClass = "status-done";
+            } else if (currentPrice && currentPrice <= entry.expectedPrice) {
+              status = "BUY NOW!";
+              statusClass = "status-buy";
+            }
+
+            html +=
+              index === 0 ? '<tr class="stock-row">' : '<tr class="price-row">';
+
+            if (index === 0) {
+              html += `<td rowspan="${rowspan}"><strong>${stock.name}</strong></td>`;
+              html += `<td rowspan="${rowspan}">`;
+              if (currentPrice !== null) {
+                html += `<span class="current-price">${currency}${currentPrice.toFixed(2)}</span>`;
+              } else {
+                html += '<span class="loading">Loading...</span>';
+              }
+              html += "</td>";
+            }
+
+            html += `<td>${currency}${entry.expectedPrice.toFixed(2)}</td>`;
+            html += `<td>${entry.quantity}</td>`;
+            html += `<td><strong>${currency}${totalAmount.toFixed(2)}</strong></td>`;
+            html += `<td><span class="status-badge ${statusClass}">${status}</span></td>`;
+            html += `<td><div class="action-buttons">`;
+
+            html += `<button class="btn btn-info" onclick="editEntry('${market}', '${encodeURIComponent(symbol)}', '${entry.id}')">✎ Edit</button>`;
+
+            if (!entry.bought) {
+              html += `<button class="btn btn-success" onclick="markAsBought('${market}', '${symbol}', ${entry.id})">✓ Bought</button>`;
+            }
+
+            html += `<button class="btn btn-danger" onclick="deleteEntry('${market}', '${symbol}', ${entry.id})">✗ Delete</button>`;
+            html += `</div></td>`;
+            html += "</tr>";
+          });
+        });
+
+        html += "</tbody></table>";
+        container.innerHTML = html;
+      }
+
+      // Update summary
+      function updateSummary() {
+        let totalRequired = 0;
+        let totalInvested = 0;
+        let pendingOrders = 0;
+        let indiaTotalAmount = 0;
+        let usTotalAmount = 0;
+
+        ["india", "us"].forEach((market) => {
+          Object.values(stocks[market]).forEach((stock) => {
+            stock.entries.forEach((entry) => {
+              const amount = entry.expectedPrice * entry.quantity;
+
+              if (market === "india") {
+                indiaTotalAmount += amount;
+              } else {
+                usTotalAmount += amount;
+              }
+
+              if (entry.bought) {
+                totalInvested += amount;
+              } else {
+                totalRequired += amount;
+                pendingOrders++;
+              }
+            });
+          });
+        });
+
+        document.getElementById("totalRequired").textContent =
+          `₹${totalRequired.toFixed(2)}`;
+        document.getElementById("totalInvested").textContent =
+          `₹${totalInvested.toFixed(2)}`;
+        document.getElementById("pendingOrders").textContent = pendingOrders;
+        document.getElementById("indiaTotalAmount").textContent =
+          `₹${indiaTotalAmount.toFixed(2)}`;
+        document.getElementById("usTotalAmount").textContent =
+          `$${usTotalAmount.toFixed(2)}`;
+      }
+
+      // Initialize
+      window.onload = function () {
+        loadData();
+        renderStocks("india");
+        renderStocks("us");
+        updateSummary();
+      };
+    </script>
+  </body>
+</html>
