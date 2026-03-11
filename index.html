@@ -285,6 +285,26 @@
         font-size: 0.95em;
       }
 
+      .stock-row.row-odd {
+        background: #eef2ff;
+      }
+      .price-row.row-odd {
+        background: #f3f6ff;
+      }
+      .stock-row.row-even {
+        background: #fff9f2;
+      }
+      .price-row.row-even {
+        background: #fffcf5;
+      }
+      .stock-row.target-reached,
+      .price-row.target-reached {
+        background: #c8f5c8 !important;
+      }
+      .stock-row.target-reached td:first-child {
+        border-left: 4px solid #2e7d32;
+      }
+
       .status-badge {
         display: inline-block;
         padding: 6px 16px;
@@ -1300,7 +1320,7 @@
         html += "<th>Actions</th>";
         html += "</tr></thead><tbody>";
 
-        stockSymbols.forEach((symbol) => {
+        stockSymbols.forEach((symbol, stockIndex) => {
           const stock = stocks[market][symbol];
           const sortedEntries = [...stock.entries].sort((a, b) => {
             if (a.expectedPrice === b.expectedPrice) {
@@ -1309,6 +1329,7 @@
             return b.expectedPrice - a.expectedPrice;
           });
           const rowspan = sortedEntries.length;
+          const altClass = stockIndex % 2 === 0 ? "row-even" : "row-odd";
 
           sortedEntries.forEach((entry, index) => {
             const totalAmount = entry.expectedPrice * entry.quantity;
@@ -1325,8 +1346,16 @@
               statusClass = "status-buy";
             }
 
+            const targetReached =
+              !entry.bought &&
+              currentPrice !== null &&
+              currentPrice <= entry.expectedPrice;
+            const targetClass = targetReached ? " target-reached" : "";
+
             html +=
-              index === 0 ? '<tr class="stock-row">' : '<tr class="price-row">';
+              index === 0
+                ? `<tr class="stock-row ${altClass}${targetClass}">`
+                : `<tr class="price-row ${altClass}${targetClass}">`;
 
             if (index === 0) {
               html += `<td rowspan="${rowspan}"><strong>${stock.name}</strong></td>`;
