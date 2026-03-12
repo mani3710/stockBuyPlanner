@@ -650,25 +650,11 @@
       };
 
       function ensureProxyTemplateConfigured() {
-        const existing = (
-          localStorage.getItem("stockProxyTemplate") || ""
-        ).trim();
-        if (existing) {
-          return;
-        }
-
-        if (window.location.hostname === "stockplanner.codermani.in") {
-          localStorage.setItem(
-            "stockProxyTemplate",
-            `${window.location.origin}/api/proxy?url={url}`,
-          );
-        }
+        // No longer needed - using direct Yahoo Finance URLs
       }
 
       // Load data from localStorage
       function loadData() {
-        ensureProxyTemplateConfigured();
-
         const savedStocks = localStorage.getItem("stockBuyPlan");
         const savedApiKeys = localStorage.getItem("apiKeys");
 
@@ -718,90 +704,37 @@
         el.style.color = isError ? "#f44336" : "#856404";
       }
 
-      function getProxyCandidates(url) {
-        // For production hosting, prefer your own proxy. Supported formats:
-        // 1) Full template with {url}, e.g. https://your-proxy.example.com/fetch?url={url}
-        // 2) Base URL, e.g. https://your-proxy.example.com/proxy
-        const configuredTemplate =
-          (window.STOCK_PROXY_TEMPLATE || "").trim() ||
-          (localStorage.getItem("stockProxyTemplate") || "").trim();
-
-        const candidates = [];
-
-        if (configuredTemplate) {
-          if (configuredTemplate.includes("{url}")) {
-            candidates.push({
-              name: "configured-proxy-template",
-              url: configuredTemplate.replace("{url}", encodeURIComponent(url)),
-            });
-          } else {
-            const base = configuredTemplate.replace(/\/+$/, "");
-            candidates.push({
-              name: "configured-proxy-base",
-              url: `${base}/${url}`,
-            });
-            candidates.push({
-              name: "configured-proxy-query",
-              url: `${base}?url=${encodeURIComponent(url)}`,
-            });
-          }
-        }
-
-        candidates.push(
-          {
-            name: "direct",
-            url,
-          },
-          {
-            name: "corsproxy.io",
-            url: `https://corsproxy.io/?${encodeURIComponent(url)}`,
-          },
-          {
-            name: "allorigins",
-            url: `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-          },
-          {
-            name: "isomorphic-git",
-            url: `https://cors.isomorphic-git.org/${url}`,
-          },
-        );
-
-        return candidates;
+      function getYahooChartUrl(symbol) {
+        const encodedSymbol = encodeURIComponent(symbol);
+        return `https://query1.finance.yahoo.com/v8/finance/chart/${encodedSymbol}`;
       }
 
-      async function fetchJsonWithCorsFallback(url) {
-        const candidates = getProxyCandidates(url);
-        let lastError = null;
+      async function fetchJsonWithCorsProxy(yahooUrl) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-        for (const candidate of candidates) {
-          try {
-            const response = await fetch(candidate.url, {
-              headers: {
-                Accept: "application/json,text/plain,*/*",
-              },
-            });
+        try {
+          // Use allorigins CORS proxy to bypass CORS restrictions
+          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`;
 
-            if (!response.ok) {
-              throw new Error(`${candidate.name} HTTP ${response.status}`);
-            }
+          const response = await fetch(proxyUrl, {
+            headers: {
+              Accept: "application/json,text/plain,*/*",
+            },
+            signal: controller.signal,
+          });
 
-            const text = await response.text();
-            try {
-              return JSON.parse(text);
-            } catch (parseError) {
-              throw new Error(`${candidate.name} returned non-JSON response`);
-            }
-          } catch (error) {
-            lastError = error;
-            console.warn(`Price fetch failed via ${candidate.name}:`, error);
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
           }
-        }
 
-        throw new Error(
-          `All price fetch routes failed. Last error: ${
-            lastError ? lastError.message : "Unknown error"
-          }`,
-        );
+          const text = await response.text();
+          return JSON.parse(text);
+        } finally {
+          clearTimeout(timeoutId);
+        }
       }
 
       // Switch tabs
@@ -885,9 +818,9 @@
       async function fetchStockPrice(symbol, market) {
         try {
           const yahooSymbol = getYahooSymbol(symbol);
-          const data = await fetchJsonWithCorsFallback(
-            `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}`,
-          );
+          const yahooUrl = getYahooChartUrl(yahooSymbol);
+
+          const data = await fetchJsonWithCorsProxy(yahooUrl);
 
           if (
             !data ||
@@ -930,7 +863,7 @@
           console.error("Error fetching price:", error);
           setApiStatus(
             market,
-            "Could not fetch price due to CORS/proxy restrictions. Configure STOCK_PROXY_TEMPLATE for reliable hosted usage.",
+            `Could not fetch prices for ${symbol}. Error: ${error.message || "Network error"}`,
             true,
           );
         }
