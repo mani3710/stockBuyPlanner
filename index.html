@@ -92,6 +92,10 @@
         color: #ff9800;
       }
 
+      .summary-card.buy-now .amount {
+        color: #2e7d32;
+      }
+
       .summary-card.india-total .amount {
         color: #e65100;
       }
@@ -470,6 +474,10 @@
           <h3>⏳ Pending Orders</h3>
           <div class="amount" id="pendingOrders">0</div>
         </div>
+        <div class="summary-card buy-now">
+          <h3>🟢 Buy Now</h3>
+          <div class="amount" id="buyNowCount">0</div>
+        </div>
         <div class="summary-card india-total">
           <h3>🇮🇳 India Total</h3>
           <div class="amount" id="indiaTotalAmount">₹0</div>
@@ -650,7 +658,20 @@
       };
 
       function ensureProxyTemplateConfigured() {
-        // No longer needed - using direct Yahoo Finance URLs
+        const storageKey = "stockProxyTemplate";
+        const existingTemplate = localStorage.getItem(storageKey);
+
+        if (existingTemplate) {
+          return existingTemplate;
+        }
+
+        if (window.location.origin === "https://stockplanner.codermani.in") {
+          const autoTemplate = `${window.location.origin}/api/proxy?url={url}`;
+          localStorage.setItem(storageKey, autoTemplate);
+          return autoTemplate;
+        }
+
+        return "";
       }
 
       // Load data from localStorage
@@ -709,29 +730,93 @@
         return `https://query1.finance.yahoo.com/v8/finance/chart/${encodedSymbol}`;
       }
 
+      function parseAllOriginsPayload(text) {
+        const payload = JSON.parse(text);
+        if (!payload || typeof payload.contents !== "string") {
+          throw new Error("Proxy returned an invalid response body.");
+        }
+        return JSON.parse(payload.contents);
+      }
+
+      function parseJinaPayload(text) {
+        const marker = "Markdown Content:";
+        const markerIndex = text.indexOf(marker);
+        const jsonText =
+          markerIndex >= 0
+            ? text.slice(markerIndex + marker.length).trim()
+            : text.trim();
+
+        return JSON.parse(jsonText);
+      }
+
       async function fetchJsonWithCorsProxy(yahooUrl) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const customProxyTemplate = ensureProxyTemplateConfigured();
+        const routes = [];
+
+        if (customProxyTemplate && customProxyTemplate.includes("{url}")) {
+          routes.push({
+            name: "custom proxy",
+            buildUrl: (url) =>
+              customProxyTemplate.replace("{url}", encodeURIComponent(url)),
+          });
+        }
+
+        routes.push(
+          {
+            name: "direct Yahoo request",
+            buildUrl: (url) => url,
+          },
+          {
+            name: "AllOrigins raw",
+            buildUrl: (url) =>
+              `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+          },
+          {
+            name: "AllOrigins get",
+            buildUrl: (url) =>
+              `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+            parseResponse: parseAllOriginsPayload,
+          },
+          {
+            name: "Jina proxy",
+            buildUrl: (url) =>
+              `https://r.jina.ai/http://${url.replace(/^https?:\/\//, "")}`,
+            parseResponse: parseJinaPayload,
+          },
+        );
+
+        const routeErrors = [];
 
         try {
-          // Use allorigins CORS proxy to bypass CORS restrictions
-          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`;
+          for (const route of routes) {
+            try {
+              const response = await fetch(route.buildUrl(yahooUrl), {
+                headers: {
+                  Accept: "application/json,text/plain,*/*",
+                },
+                signal: controller.signal,
+              });
 
-          const response = await fetch(proxyUrl, {
-            headers: {
-              Accept: "application/json,text/plain,*/*",
-            },
-            signal: controller.signal,
-          });
+              if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+              }
 
-          clearTimeout(timeoutId);
+              const text = await response.text();
+              const data = route.parseResponse
+                ? route.parseResponse(text)
+                : JSON.parse(text);
 
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+              return data;
+            } catch (error) {
+              routeErrors.push(
+                `${route.name}: ${error.message || "Request failed"}`,
+              );
+            }
           }
 
-          const text = await response.text();
-          return JSON.parse(text);
+          throw new Error(routeErrors.join(" | "));
         } finally {
           clearTimeout(timeoutId);
         }
@@ -882,6 +967,16 @@
           await fetchStockPrice(symbol, market);
           await new Promise((resolve) => setTimeout(resolve, 500)); // Yahoo Finance: no rate limits
         }
+      }
+
+      async function refreshSingleStock(market, encodedStockName) {
+        const stockName = decodeURIComponent(encodedStockName);
+        if (!stocks[market] || !stocks[market][stockName]) {
+          alert("Stock not found.");
+          return;
+        }
+
+        await fetchStockPrice(stockName, market);
       }
 
       // Mark as bought
@@ -1308,6 +1403,7 @@
             html += `<td><div class="action-buttons">`;
 
             html += `<button class="btn btn-info" onclick="editEntry('${market}', '${encodeURIComponent(symbol)}', '${entry.id}')">✎ Edit</button>`;
+            html += `<button class="btn btn-info" onclick="refreshSingleStock('${market}', '${encodeURIComponent(symbol)}')">⟳ Refresh</button>`;
 
             if (!entry.bought) {
               html += `<button class="btn btn-success" onclick="markAsBought('${market}', '${symbol}', ${entry.id})">✓ Bought</button>`;
@@ -1328,6 +1424,7 @@
         let totalRequired = 0;
         let totalInvested = 0;
         let pendingOrders = 0;
+        let buyNowCount = 0;
         let indiaTotalAmount = 0;
         let usTotalAmount = 0;
 
@@ -1347,6 +1444,13 @@
               } else {
                 totalRequired += amount;
                 pendingOrders++;
+
+                if (
+                  stock.currentPrice !== null &&
+                  stock.currentPrice <= entry.expectedPrice
+                ) {
+                  buyNowCount++;
+                }
               }
             });
           });
@@ -1357,6 +1461,7 @@
         document.getElementById("totalInvested").textContent =
           `₹${totalInvested.toFixed(2)}`;
         document.getElementById("pendingOrders").textContent = pendingOrders;
+        document.getElementById("buyNowCount").textContent = buyNowCount;
         document.getElementById("indiaTotalAmount").textContent =
           `₹${indiaTotalAmount.toFixed(2)}`;
         document.getElementById("usTotalAmount").textContent =
@@ -1365,6 +1470,7 @@
 
       // Initialize
       window.onload = function () {
+        ensureProxyTemplateConfigured();
         loadData();
         renderStocks("india");
         renderStocks("us");
