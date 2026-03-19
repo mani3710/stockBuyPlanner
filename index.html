@@ -749,13 +749,38 @@
         return JSON.parse(jsonText);
       }
 
-      async function fetchJsonWithCorsProxy(yahooUrl) {
+      function getPreferredProxyRouteName() {
+        return localStorage.getItem("stockProxyPreferredRoute") || "";
+      }
+
+      function setPreferredProxyRouteName(routeName) {
+        if (!routeName) {
+          return;
+        }
+        localStorage.setItem("stockProxyPreferredRoute", routeName);
+      }
+
+      async function fetchWithTimeout(url, options, timeoutMs) {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+          return await fetch(url, {
+            ...options,
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }
+
+      async function fetchJsonWithCorsProxy(yahooUrl) {
         const customProxyTemplate = ensureProxyTemplateConfigured();
+        const hasCustomProxy =
+          customProxyTemplate && customProxyTemplate.includes("{url}");
         const routes = [];
 
-        if (customProxyTemplate && customProxyTemplate.includes("{url}")) {
+        if (hasCustomProxy) {
           routes.push({
             name: "custom proxy",
             buildUrl: (url) =>
@@ -763,21 +788,29 @@
           });
         }
 
-        routes.push(
-          {
+        // Direct browser calls to Yahoo are usually blocked by CORS.
+        // Keep it opt-in only to avoid noisy failed requests.
+        const allowDirectYahoo =
+          localStorage.getItem("stockAllowDirectYahoo") === "true";
+
+        if (allowDirectYahoo) {
+          routes.push({
             name: "direct Yahoo request",
             buildUrl: (url) => url,
-          },
-          {
-            name: "AllOrigins raw",
-            buildUrl: (url) =>
-              `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-          },
+          });
+        }
+
+        routes.push(
           {
             name: "AllOrigins get",
             buildUrl: (url) =>
               `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
             parseResponse: parseAllOriginsPayload,
+          },
+          {
+            name: "AllOrigins raw",
+            buildUrl: (url) =>
+              `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
           },
           {
             name: "Jina proxy",
@@ -787,39 +820,61 @@
           },
         );
 
+        const preferredRouteName = getPreferredProxyRouteName();
+        if (preferredRouteName) {
+          routes.sort((a, b) => {
+            if (a.name === preferredRouteName) {
+              return -1;
+            }
+            if (b.name === preferredRouteName) {
+              return 1;
+            }
+            return 0;
+          });
+        }
+
+        // If custom proxy exists, try only reliable routes first to reduce traffic noise.
+        const activeRoutes = hasCustomProxy
+          ? routes.filter(
+              (route) =>
+                route.name === "custom proxy" ||
+                route.name === "AllOrigins get",
+            )
+          : routes;
+
         const routeErrors = [];
 
-        try {
-          for (const route of routes) {
-            try {
-              const response = await fetch(route.buildUrl(yahooUrl), {
+        for (const route of activeRoutes) {
+          try {
+            const response = await fetchWithTimeout(
+              route.buildUrl(yahooUrl),
+              {
                 headers: {
                   Accept: "application/json,text/plain,*/*",
                 },
-                signal: controller.signal,
-              });
+              },
+              6500,
+            );
 
-              if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-              }
-
-              const text = await response.text();
-              const data = route.parseResponse
-                ? route.parseResponse(text)
-                : JSON.parse(text);
-
-              return data;
-            } catch (error) {
-              routeErrors.push(
-                `${route.name}: ${error.message || "Request failed"}`,
-              );
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
             }
-          }
 
-          throw new Error(routeErrors.join(" | "));
-        } finally {
-          clearTimeout(timeoutId);
+            const text = await response.text();
+            const data = route.parseResponse
+              ? route.parseResponse(text)
+              : JSON.parse(text);
+
+            setPreferredProxyRouteName(route.name);
+            return data;
+          } catch (error) {
+            routeErrors.push(
+              `${route.name}: ${error.message || "Request failed"}`,
+            );
+          }
         }
+
+        throw new Error(routeErrors.join(" | "));
       }
 
       // Switch tabs
