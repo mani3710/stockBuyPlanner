@@ -351,6 +351,34 @@
         font-size: 1.1em;
       }
 
+      .price-change {
+        display: block;
+        font-size: 0.85em;
+        margin-top: 6px;
+      }
+
+      .price-change.positive {
+        color: #2e7d32;
+      }
+
+      .price-change.negative {
+        color: #c62828;
+      }
+
+      .range-info {
+        display: block;
+        font-size: 0.8em;
+        color: #555;
+        margin-top: 6px;
+      }
+
+      .range-info strong {
+        display: inline-block;
+        width: 110px;
+        color: #666;
+        font-weight: 600;
+      }
+
       .loading {
         color: #999;
         font-style: italic;
@@ -877,6 +905,361 @@
         throw new Error(routeErrors.join(" | "));
       }
 
+      // Fetch text/html using the same proxy routing strategy (returns raw text)
+      async function fetchTextWithCorsProxy(url) {
+        const customProxyTemplate = ensureProxyTemplateConfigured();
+        const hasCustomProxy =
+          customProxyTemplate && customProxyTemplate.includes("{url}");
+
+        const routes = [];
+
+        if (hasCustomProxy) {
+          routes.push({
+            name: "custom proxy",
+            buildUrl: (u) =>
+              customProxyTemplate.replace("{url}", encodeURIComponent(u)),
+          });
+        }
+
+        const allowDirect =
+          localStorage.getItem("stockAllowDirectYahoo") === "true";
+        if (allowDirect) {
+          routes.push({ name: "direct", buildUrl: (u) => u });
+        }
+
+        routes.push(
+          {
+            name: "AllOrigins raw",
+            buildUrl: (u) =>
+              `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+          },
+          {
+            name: "Jina proxy",
+            buildUrl: (u) =>
+              `https://r.jina.ai/http://${u.replace(/^https?:\/\//, "")}`,
+          },
+        );
+
+        const preferredRouteName = getPreferredProxyRouteName();
+        if (preferredRouteName) {
+          routes.sort((a, b) => {
+            if (a.name === preferredRouteName) return -1;
+            if (b.name === preferredRouteName) return 1;
+            return 0;
+          });
+        }
+
+        const activeRoutes = hasCustomProxy
+          ? routes.filter(
+              (r) => r.name === "custom proxy" || r.name === "AllOrigins raw",
+            )
+          : routes;
+
+        const routeErrors = [];
+
+        for (const route of activeRoutes) {
+          try {
+            const response = await fetchWithTimeout(
+              route.buildUrl(url),
+              {
+                headers: { Accept: "text/html,application/xhtml+xml,*/*" },
+              },
+              8000,
+            );
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const text = await response.text();
+            setPreferredProxyRouteName(route.name);
+            return text;
+          } catch (err) {
+            routeErrors.push(
+              `${route.name}: ${err.message || "Request failed"}`,
+            );
+          }
+        }
+
+        throw new Error(routeErrors.join(" | "));
+      }
+
+      // Try to fetch Intrinsic Value from attainix detail page and save into stocks
+      async function fetchIntrinsicValue(symbol, market) {
+        try {
+          // Attainix expects a stockcode like GAIL.IN — prefer the `.IN` variant.
+          const raw = String(symbol || "")
+            .trim()
+            .toUpperCase();
+          const base = raw.split(".")[0];
+          const codeCandidates = [];
+
+          // Try .IN first (Attainix uses .IN), then try the exact raw input, then the base symbol.
+          codeCandidates.push(base + ".IN");
+          if (raw !== base + ".IN") {
+            codeCandidates.push(raw);
+          }
+          if (raw !== base) {
+            codeCandidates.push(base);
+          }
+
+          let pageText = null;
+          let usedCode = null;
+
+          for (const code of codeCandidates) {
+            const url = `https://www.attainix.com/ICTrackerDetail.aspx?stockcode=${encodeURIComponent(code)}`;
+            try {
+              pageText = await fetchTextWithCorsProxy(url);
+              if (pageText && pageText.length > 0) {
+                usedCode = code;
+                break;
+              }
+            } catch (e) {
+              // try next
+            }
+          }
+
+          if (!pageText) {
+            return; // couldn't fetch page
+          }
+
+          // Try parsing the page as HTML and locate a table containing Intrinsic Value rows (preferred)
+          let intrinsic = null;
+          let intrinsicDate = null;
+          try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(pageText, "text/html");
+
+            // Prefer direct named elements if present (Attainix uses specific span IDs)
+            const intrinsicSpan =
+              doc.getElementById("PageContent_lbl_IntrinsicStockPrice") ||
+              doc.querySelector("span#PageContent_lbl_IntrinsicStockPrice");
+            const intrinsicDateSpan =
+              doc.getElementById("PageContent_lbl_IntrinsicStockPriceDate") ||
+              doc.getElementById("PageContent_lbl_LatestStockPriceDate");
+
+            if (intrinsicSpan) {
+              const rawText = intrinsicSpan.textContent.trim();
+              if (rawText && rawText !== "----") {
+                const m = rawText.match(/([\d,]+(?:\.\d+)?)/);
+                if (m) {
+                  intrinsic = parseFloat(m[1].replace(/,/g, ""));
+                  intrinsicDate = intrinsicDateSpan
+                    ? intrinsicDateSpan.textContent.trim()
+                    : null;
+                  setApiStatus(
+                    market,
+                    `Intrinsic parsed (span) for ${symbol}: ${rawText}`,
+                    false,
+                  );
+                }
+              }
+            }
+
+            const tables = Array.from(doc.querySelectorAll("table"));
+
+            // Prefer an explicit "Stock Price" section if present (this contains rows like:
+            // 31 Dec 2025 Rs. 623.96 Rs. 482.10) so we don't accidentally pick small IC-ratio numbers.
+            let candidates = [];
+            const stockPriceEl = Array.from(
+              doc.querySelectorAll("h1,h2,h3,h4,h5,strong,b,div,span"),
+            ).find((el) => /stock\s*price/i.test(el.textContent));
+
+            if (stockPriceEl) {
+              // Look for a nearby table first (next siblings / parent scope)
+              let foundTable = null;
+              // check siblings
+              let sib = stockPriceEl.nextElementSibling;
+              while (sib && !foundTable) {
+                if (sib.tagName && sib.tagName.toLowerCase() === "table") {
+                  foundTable = sib;
+                  break;
+                }
+                sib = sib.nextElementSibling;
+              }
+
+              // fallback: table inside same parent
+              if (!foundTable && stockPriceEl.parentElement) {
+                foundTable = stockPriceEl.parentElement.querySelector("table");
+              }
+
+              if (foundTable) {
+                candidates = [foundTable];
+              }
+            }
+
+            // If we didn't find an explicit Stock Price table, fall back to searching tables
+            if (candidates.length === 0) {
+              // Narrow tables to those that include both Intrinsic Value and Market Price to avoid matching IC ratio lines (e.g., MC/IW 0.77)
+              candidates = tables.filter(
+                (t) =>
+                  /Intrinsic\s*Value/i.test(t.textContent) &&
+                  /Market\s*Price/i.test(t.textContent),
+              );
+            }
+
+            // As an additional fallback, attempt to parse a plaintext "Stock Price" section from the raw HTML
+            let parsedFromTextSection = null;
+            if (candidates.length === 0) {
+              const textMatch = pageText.match(/Stock\s*Price([\s\S]{0,800})/i);
+              if (textMatch && textMatch[1]) {
+                const section = textMatch[1]
+                  .split(/\r?\n/)
+                  .map((l) => l.trim())
+                  .filter(Boolean);
+                // look for lines containing a date and two numbers (intrinsic and market price)
+                for (const line of section) {
+                  const m = line.match(
+                    /(\d{1,2}\s+\w+\s+\d{4}).*?([\d,]+(?:\.\d+)?).*?([\d,]+(?:\.\d+)?)/,
+                  );
+                  if (m) {
+                    const dt = m[1];
+                    const intrinsicNum = parseFloat(m[2].replace(/,/g, ""));
+                    if (Number.isFinite(intrinsicNum)) {
+                      parsedFromTextSection = {
+                        value: intrinsicNum,
+                        dateText: dt,
+                      };
+                      setApiStatus(
+                        market,
+                        `Intrinsic parsed (stock-price-text) for ${symbol}: ${intrinsicNum} on ${dt}`,
+                        false,
+                      );
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+
+            for (const table of candidates) {
+              // collect data rows (rows that have at least two cells)
+              const rows = Array.from(
+                table.querySelectorAll("tbody tr, tr"),
+              ).map((r) =>
+                Array.from(r.querySelectorAll("td, th")).map((c) =>
+                  c.textContent.trim(),
+                ),
+              );
+
+              const dataRows = rows.filter(
+                (cells) => cells && cells.length >= 2,
+              );
+              // normalize into objects with dateText and valText
+              const entries = dataRows.map((cells) => ({
+                dateText: cells[0],
+                valText: cells[1],
+              }));
+
+              if (entries.length === 0) continue;
+
+              // Check the last two rows' second column for a value other than '----'
+              const lastTwo = entries.slice(-2);
+              let picked = null;
+              for (let i = lastTwo.length - 1; i >= 0; i--) {
+                const row = lastTwo[i];
+                const rawVal = (row.valText || "")
+                  .replace(/\u00A0/g, " ")
+                  .trim();
+                if (
+                  !/^[-\s]+$/.test(rawVal) &&
+                  rawVal !== "----" &&
+                  rawVal.length > 0
+                ) {
+                  const m = rawVal.match(/([\d,]+(?:\.\d+)?)/);
+                  const n = m ? parseFloat(m[1].replace(/,/g, "")) : NaN;
+                  const dt = new Date(row.dateText);
+                  if (Number.isFinite(n) && !isNaN(dt.getTime())) {
+                    picked = { value: n, dateText: row.dateText };
+                    break;
+                  }
+                }
+              }
+
+              // If none in last two, fallback to first data row's second column
+              if (!picked) {
+                const first = entries[0];
+                const rawVal = (first.valText || "")
+                  .replace(/\u00A0/g, " ")
+                  .trim();
+                const m = rawVal.match(/([\d,]+(?:\.\d+)?)/);
+                const n = m ? parseFloat(m[1].replace(/,/g, "")) : NaN;
+                const dt = new Date(first.dateText);
+                if (Number.isFinite(n) && !isNaN(dt.getTime())) {
+                  picked = { value: n, dateText: first.dateText };
+                }
+              }
+
+              if (picked) {
+                intrinsic = picked.value;
+                intrinsicDate = picked.dateText;
+                setApiStatus(
+                  market,
+                  `Intrinsic parsed (table) for ${symbol}: ${picked.value} on ${picked.dateText}`,
+                  false,
+                );
+                break;
+              }
+            }
+
+            // If we parsed a Stock Price section from raw text earlier, prefer it (likely the canonical intrinsic)
+            if (!intrinsic && parsedFromTextSection) {
+              intrinsic = parsedFromTextSection.value;
+              intrinsicDate = parsedFromTextSection.dateText;
+            }
+          } catch (e) {
+            // ignore DOM parsing errors and fallback to regex below
+          }
+
+          // Fallback: Attempt to extract an intrinsic value like "Intrinsic Value (W)" or "Intrinsic Value" followed by a number
+          if (intrinsic == null) {
+            const patterns = [
+              /Intrinsic Value[^\d\n\r\u00A0]*([\d,]+(?:\.\d+)?)/i,
+              /Intrinsic Value[^<]*<[^>]*>[^\d]*([\d,]+(?:\.\d+)?)/i,
+              /Intrinsic Value[^:]*:\s*Rs\.?\s*([\d,]+(?:\.\d+)?)/i,
+              /Intrinsic Value\s*[:\-]?\s*([\d,]+(?:\.\d+)?)/i,
+            ];
+
+            for (const pat of patterns) {
+              const m = pageText.match(pat);
+              if (m && m[1]) {
+                const n = parseFloat(m[1].replace(/,/g, ""));
+                if (Number.isFinite(n)) {
+                  intrinsic = n;
+                  break;
+                }
+              }
+            }
+          }
+
+          if (!stocks[market]) return;
+          if (!stocks[market][symbol]) {
+            stocks[market][symbol] = {
+              name: symbol,
+              currentPrice: null,
+              entries: [],
+            };
+          }
+
+          stocks[market][symbol].intrinsicValue =
+            intrinsic != null && Number.isFinite(intrinsic)
+              ? parseFloat(intrinsic.toFixed(2))
+              : null;
+          stocks[market][symbol].intrinsicDate =
+            intrinsicDate != null ? String(intrinsicDate) : null;
+
+          if (intrinsic != null) {
+            saveData();
+            renderStocks(market);
+            setApiStatus(
+              market,
+              `Intrinsic value updated for ${symbol} (${usedCode || "attainix"})`,
+              false,
+            );
+          }
+        } catch (e) {
+          // ignore parse/fetch errors
+        }
+      }
+
       // Switch tabs
       function switchTab(tabName) {
         // Update tab buttons
@@ -982,8 +1365,77 @@
           const rawPrice = meta && meta.regularMarketPrice;
           const price = parseFloat(rawPrice);
 
+          const rawChange = meta && meta.regularMarketChange;
+          const rawChangePercent = meta && meta.regularMarketChangePercent;
+          const low52 = meta && meta.fiftyTwoWeekLow;
+          const high52 = meta && meta.fiftyTwoWeekHigh;
+
           if (Number.isFinite(price) && price > 0) {
+            // Ensure stock object exists
+            if (!stocks[market][symbol]) {
+              stocks[market][symbol] = {
+                name: symbol,
+                currentPrice: null,
+                entries: [],
+              };
+            }
+
             stocks[market][symbol].currentPrice = parseFloat(price.toFixed(2));
+
+            stocks[market][symbol].change =
+              Number.isFinite(parseFloat(rawChange)) && rawChange !== null
+                ? parseFloat(rawChange)
+                : null;
+
+            stocks[market][symbol].changePercent =
+              Number.isFinite(parseFloat(rawChangePercent)) &&
+              rawChangePercent !== null
+                ? parseFloat(rawChangePercent)
+                : null;
+
+            stocks[market][symbol].fiftyTwoWeekLow =
+              Number.isFinite(parseFloat(low52)) && low52 !== null
+                ? parseFloat(low52)
+                : null;
+
+            stocks[market][symbol].fiftyTwoWeekHigh =
+              Number.isFinite(parseFloat(high52)) && high52 !== null
+                ? parseFloat(high52)
+                : null;
+
+            // Fallback: compute change & percent from previous close if Yahoo omitted percent
+            try {
+              const prevClose =
+                (meta && (meta.previousClose ?? meta.chartPreviousClose)) ||
+                null;
+
+              if (
+                (stocks[market][symbol].changePercent === null ||
+                  stocks[market][symbol].changePercent === undefined) &&
+                Number.isFinite(price) &&
+                Number.isFinite(prevClose) &&
+                prevClose !== 0
+              ) {
+                const computedChange = parseFloat(
+                  (price - prevClose).toFixed(2),
+                );
+                const computedPct = parseFloat(
+                  ((computedChange / prevClose) * 100).toFixed(2),
+                );
+
+                // Only fill missing values
+                if (stocks[market][symbol].change == null) {
+                  stocks[market][symbol].change = computedChange;
+                }
+                stocks[market][symbol].changePercent =
+                  stocks[market][symbol].changePercent == null
+                    ? computedPct
+                    : stocks[market][symbol].changePercent;
+              }
+            } catch (e) {
+              // ignore fallback errors
+            }
+
             saveData();
             renderStocks(market);
             setApiStatus(
@@ -1021,6 +1473,12 @@
         for (const symbol of stockSymbols) {
           await fetchStockPrice(symbol, market);
           await new Promise((resolve) => setTimeout(resolve, 500)); // Yahoo Finance: no rate limits
+          try {
+            await fetchIntrinsicValue(symbol, market);
+            await new Promise((resolve) => setTimeout(resolve, 300));
+          } catch (e) {
+            // ignore intrinsic fetch errors per-symbol
+          }
         }
       }
 
@@ -1032,6 +1490,11 @@
         }
 
         await fetchStockPrice(stockName, market);
+        try {
+          await fetchIntrinsicValue(stockName, market);
+        } catch (e) {
+          // ignore
+        }
       }
 
       // Mark as bought
@@ -1442,13 +1905,80 @@
 
             if (index === 0) {
               html += `<td rowspan="${rowspan}"><strong>${stock.name}</strong></td>`;
+
+              // Current price + change (rowspan)
               html += `<td rowspan="${rowspan}">`;
               if (currentPrice !== null) {
                 html += `<span class="current-price">${currency}${currentPrice.toFixed(2)}</span>`;
+
+                if (
+                  (stock.changePercent !== null &&
+                    stock.changePercent !== undefined) ||
+                  (stock.change !== null && stock.change !== undefined)
+                ) {
+                  // Prefer percent when available, fallback to absolute change
+                  const primary =
+                    stock.changePercent != null
+                      ? stock.changePercent
+                      : stock.change;
+                  const sign = primary > 0 ? "+" : primary < 0 ? "" : "";
+                  const changeClass =
+                    primary > 0 ? "positive" : primary < 0 ? "negative" : "";
+                  const pctText =
+                    stock.changePercent != null
+                      ? `${stock.changePercent.toFixed(2)}%`
+                      : null;
+                  const absText =
+                    stock.change != null ? `${stock.change.toFixed(2)}` : null;
+                  const display = pctText
+                    ? `${sign}${pctText}`
+                    : `${sign}${absText}`;
+                  html += `<span class="price-change ${changeClass}">${display}</span>`;
+                }
+
+                // Show percent from 52-week low / high below current price
+                if (
+                  stock.fiftyTwoWeekLow != null &&
+                  Number.isFinite(stock.fiftyTwoWeekLow)
+                ) {
+                  const lowPct =
+                    ((currentPrice - stock.fiftyTwoWeekLow) /
+                      stock.fiftyTwoWeekLow) *
+                    100;
+                  const lowSign = lowPct > 0 ? "+" : lowPct < 0 ? "" : "";
+                  const lowClass =
+                    lowPct > 0 ? "positive" : lowPct < 0 ? "negative" : "";
+                  html += `<span class="range-info"><strong>From 52W Low:</strong><span>${currency}${stock.fiftyTwoWeekLow.toFixed(2)}</span> <span class="price-change ${lowClass}">${lowSign}${lowPct.toFixed(2)}%</span></span>`;
+                }
+
+                if (
+                  stock.fiftyTwoWeekHigh != null &&
+                  Number.isFinite(stock.fiftyTwoWeekHigh)
+                ) {
+                  const highPct =
+                    ((currentPrice - stock.fiftyTwoWeekHigh) /
+                      stock.fiftyTwoWeekHigh) *
+                    100;
+                  const highSign = highPct > 0 ? "+" : highPct < 0 ? "" : "";
+                  const highClass =
+                    highPct > 0 ? "positive" : highPct < 0 ? "negative" : "";
+                  html += `<span class="range-info"><strong>From 52W High:</strong><span>${currency}${stock.fiftyTwoWeekHigh.toFixed(2)}</span> <span class="price-change ${highClass}">${highSign}${highPct.toFixed(2)}%</span></span>`;
+                }
+                if (
+                  stock.intrinsicValue != null &&
+                  Number.isFinite(stock.intrinsicValue)
+                ) {
+                  const datePart = stock.intrinsicDate
+                    ? ` (${stock.intrinsicDate})`
+                    : "";
+                  html += `<span class="range-info"><strong>Intrinsic:</strong> <span>${currency}${stock.intrinsicValue.toFixed(2)}</span>${datePart}</span>`;
+                }
               } else {
                 html += '<span class="loading">Loading...</span>';
               }
               html += "</td>";
+
+              // (52W Low/High values are shown as percent lines under current price)
             }
 
             html += `<td>${currency}${entry.expectedPrice.toFixed(2)}</td>`;
