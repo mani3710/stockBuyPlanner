@@ -379,6 +379,64 @@
         font-weight: 600;
       }
 
+      .vs-market {
+        display: block;
+        font-size: 0.8em;
+        margin-top: 4px;
+        font-weight: 600;
+      }
+
+      .vs-market.below {
+        color: #2e7d32;
+      }
+
+      .vs-market.above {
+        color: #c62828;
+      }
+
+      .vs-market.flat {
+        color: #666;
+      }
+
+      .intrinsic-edit {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 6px;
+        flex-wrap: wrap;
+      }
+
+      .intrinsic-edit label {
+        font-size: 0.8em;
+        font-weight: 600;
+        color: #666;
+        min-width: 110px;
+      }
+
+      .intrinsic-edit input {
+        width: 100px;
+        padding: 6px 8px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.85em;
+      }
+
+      .intrinsic-edit input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .intrinsic-edit .intrinsic-date {
+        font-size: 0.75em;
+        color: #888;
+      }
+
+      .intrinsic-edit .btn-save-intrinsic {
+        padding: 5px 10px;
+        font-size: 0.75em;
+        text-transform: none;
+      }
+
       .loading {
         color: #999;
         font-style: italic;
@@ -1604,6 +1662,35 @@
         fetchStockPrice(updatedSymbol, market);
       }
 
+      function updateIntrinsicValue(market, encodedSymbol, rawValue) {
+        const symbol = decodeURIComponent(encodedSymbol);
+        const stock = stocks[market] && stocks[market][symbol];
+        if (!stock) {
+          alert("Stock not found.");
+          return;
+        }
+
+        const trimmed = String(rawValue ?? "").trim();
+        if (trimmed === "") {
+          stock.intrinsicValue = null;
+          stock.intrinsicDate = null;
+          saveData();
+          renderStocks(market);
+          return;
+        }
+
+        const value = parseFloat(trimmed);
+        if (!Number.isFinite(value) || value < 0) {
+          alert("Please enter a valid intrinsic value.");
+          return;
+        }
+
+        stock.intrinsicValue = parseFloat(value.toFixed(2));
+        stock.intrinsicDate = "manual";
+        saveData();
+        renderStocks(market);
+      }
+
       // Delete entry
       function deleteEntry(market, stockName, entryId) {
         if (!confirm("Are you sure you want to delete this entry?")) {
@@ -1964,24 +2051,47 @@
                     highPct > 0 ? "positive" : highPct < 0 ? "negative" : "";
                   html += `<span class="range-info"><strong>From 52W High:</strong><span>${currency}${stock.fiftyTwoWeekHigh.toFixed(2)}</span> <span class="price-change ${highClass}">${highSign}${highPct.toFixed(2)}%</span></span>`;
                 }
-                if (
-                  stock.intrinsicValue != null &&
-                  Number.isFinite(stock.intrinsicValue)
-                ) {
-                  const datePart = stock.intrinsicDate
-                    ? ` (${stock.intrinsicDate})`
-                    : "";
-                  html += `<span class="range-info"><strong>Intrinsic:</strong> <span>${currency}${stock.intrinsicValue.toFixed(2)}</span>${datePart}</span>`;
-                }
               } else {
                 html += '<span class="loading">Loading...</span>';
               }
+
+              const intrinsicVal =
+                stock.intrinsicValue != null &&
+                Number.isFinite(stock.intrinsicValue)
+                  ? stock.intrinsicValue
+                  : "";
+              const intrinsicDateAttr = stock.intrinsicDate
+                ? String(stock.intrinsicDate).replace(/"/g, "&quot;")
+                : "";
+              html += `<div class="intrinsic-edit">`;
+              html += `<label>Intrinsic:</label>`;
+              html += `<input type="number" step="0.01" min="0" value="${intrinsicVal}" placeholder="0.00" onkeydown="if(event.key==='Enter'){updateIntrinsicValue('${market}','${encodeURIComponent(symbol)}',this.value)}" />`;
+              html += `<button class="btn btn-info btn-save-intrinsic" onclick="updateIntrinsicValue('${market}','${encodeURIComponent(symbol)}',this.previousElementSibling.value)">Save</button>`;
+              if (stock.intrinsicDate) {
+                html += `<span class="intrinsic-date" title="${intrinsicDateAttr}">${stock.intrinsicDate}</span>`;
+              }
+              html += `</div>`;
               html += "</td>";
 
               // (52W Low/High values are shown as percent lines under current price)
             }
 
-            html += `<td>${currency}${entry.expectedPrice.toFixed(2)}</td>`;
+            let targetCell = `${currency}${entry.expectedPrice.toFixed(2)}`;
+            if (currentPrice !== null && Number.isFinite(currentPrice) && currentPrice > 0) {
+              const vsMarketPct =
+                ((entry.expectedPrice - currentPrice) / currentPrice) * 100;
+              const vsSign = vsMarketPct > 0 ? "+" : "";
+              const vsClass =
+                vsMarketPct < 0 ? "below" : vsMarketPct > 0 ? "above" : "flat";
+              const vsLabel =
+                vsMarketPct < 0
+                  ? `${Math.abs(vsMarketPct).toFixed(2)}% below market`
+                  : vsMarketPct > 0
+                    ? `${vsMarketPct.toFixed(2)}% above market`
+                    : `at market`;
+              targetCell += `<span class="vs-market ${vsClass}" title="${vsSign}${vsMarketPct.toFixed(2)}% vs market">${vsLabel}</span>`;
+            }
+            html += `<td>${targetCell}</td>`;
             html += `<td>${entry.quantity}</td>`;
             html += `<td><strong>${currency}${totalAmount.toFixed(2)}</strong></td>`;
             html += `<td><span class="status-badge ${statusClass}">${status}</span></td>`;
