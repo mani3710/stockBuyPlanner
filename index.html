@@ -4,7 +4,38 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stock Buy Plan Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      :root {
+        --bg: #e8eef5;
+        --bg-accent: #d4e0ed;
+        --surface: #ffffff;
+        --surface-2: #f4f7fb;
+        --ink: #152033;
+        --muted: #5c6b7e;
+        --line: #d7e0eb;
+        --brand: #1f6f8b;
+        --brand-deep: #155368;
+        --brand-soft: #e6f3f7;
+        --buy: #1b7a4e;
+        --buy-soft: #e4f6ec;
+        --wait: #b86e00;
+        --wait-soft: #fff4e0;
+        --done: #6b7785;
+        --done-soft: #eef1f4;
+        --danger: #c0392b;
+        --danger-soft: #fdecea;
+        --up: #1b7a4e;
+        --down: #c0392b;
+        --shadow: 0 10px 30px rgba(21, 32, 51, 0.08);
+        --radius: 14px;
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -12,129 +43,153 @@
       }
 
       body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: "DM Sans", system-ui, sans-serif;
+        background:
+          radial-gradient(ellipse 80% 50% at 10% -10%, #c5d9ea 0%, transparent 55%),
+          radial-gradient(ellipse 70% 45% at 100% 0%, #d9e8df 0%, transparent 50%),
+          var(--bg);
         min-height: 100vh;
         padding: 20px;
+        color: var(--ink);
       }
 
       .container {
-        max-width: 1400px;
+        max-width: 1280px;
         margin: 0 auto;
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        overflow: hidden;
       }
 
       .header {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-        padding: 30px;
-        text-align: center;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 20px;
+        margin-bottom: 22px;
+        flex-wrap: wrap;
       }
 
-      .header h1 {
-        font-size: 2.5em;
-        margin-bottom: 10px;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      .header-brand h1 {
+        font-size: clamp(1.7rem, 3vw, 2.2rem);
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: var(--ink);
       }
 
-      .header p {
-        font-size: 1.1em;
-        opacity: 0.9;
+      .header-brand p {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      .header-meta {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        font-size: 0.85rem;
+        color: var(--muted);
+        font-weight: 500;
       }
 
       .summary-cards {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
-        padding: 30px;
-        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px;
+        margin-bottom: 18px;
       }
 
       .summary-card {
-        background: white;
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        transition: transform 0.3s;
-      }
-
-      .summary-card:hover {
-        transform: translateY(-5px);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+        box-shadow: var(--shadow);
       }
 
       .summary-card h3 {
-        font-size: 0.9em;
-        color: #666;
-        margin-bottom: 10px;
+        font-size: 0.72rem;
+        color: var(--muted);
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.06em;
+        margin-bottom: 8px;
+        font-weight: 600;
       }
 
       .summary-card .amount {
-        font-size: 2em;
-        font-weight: bold;
-        color: #333;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--ink);
       }
 
       .summary-card.required .amount {
-        color: #f5576c;
+        color: var(--danger);
       }
-
       .summary-card.invested .amount {
-        color: #4caf50;
+        color: var(--buy);
       }
-
       .summary-card.pending .amount {
-        color: #ff9800;
+        color: var(--wait);
       }
-
       .summary-card.buy-now .amount {
-        color: #2e7d32;
+        color: var(--buy);
       }
-
       .summary-card.india-total .amount {
-        color: #e65100;
+        color: #c45c16;
+      }
+      .summary-card.us-total .amount {
+        color: #1a5fb4;
       }
 
-      .summary-card.us-total .amount {
-        color: #1565c0;
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
       }
 
       .tabs {
         display: flex;
-        background: #f5f5f5;
-        padding: 0 30px;
-        border-bottom: 2px solid #ddd;
+        gap: 4px;
+        padding: 10px 12px 0;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--line);
       }
 
       .tab {
-        padding: 15px 30px;
+        padding: 12px 18px;
         cursor: pointer;
         border: none;
-        background: none;
-        font-size: 1.1em;
+        background: transparent;
+        font-family: inherit;
+        font-size: 0.95rem;
         font-weight: 600;
-        color: #666;
-        transition: all 0.3s;
-        border-bottom: 3px solid transparent;
-      }
-
-      .tab.active {
-        color: #667eea;
-        border-bottom-color: #667eea;
-        background: white;
+        color: var(--muted);
+        border-radius: 10px 10px 0 0;
+        transition: 0.2s ease;
       }
 
       .tab:hover {
-        color: #667eea;
+        color: var(--brand);
+      }
+
+      .tab.active {
+        color: var(--brand-deep);
+        background: var(--surface);
+        box-shadow: 0 -1px 0 var(--surface);
       }
 
       .content {
-        padding: 30px;
+        padding: 20px;
       }
 
       .tab-content {
@@ -145,23 +200,53 @@
         display: block;
       }
 
+      .status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background: var(--brand-soft);
+        border: 1px solid #c5e0e8;
+        margin-bottom: 16px;
+        font-size: 0.88rem;
+        color: var(--brand-deep);
+      }
+
+      .status-bar .hint {
+        color: var(--muted);
+      }
+
+      .status-bar .api-msg {
+        font-size: 0.82rem;
+        opacity: 0.9;
+      }
+
+      .status-bar .api-msg.error {
+        color: var(--danger);
+      }
+
       .add-stock-section {
-        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-        padding: 25px;
-        border-radius: 15px;
-        margin-bottom: 30px;
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        padding: 18px;
+        border-radius: var(--radius);
+        margin-bottom: 16px;
       }
 
       .add-stock-section h2 {
-        margin-bottom: 20px;
-        color: #333;
+        margin-bottom: 14px;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--ink);
       }
 
       .form-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-        margin-bottom: 15px;
+        grid-template-columns: 1.4fr 1fr 1fr auto;
+        gap: 12px;
+        align-items: end;
       }
 
       .form-group {
@@ -170,169 +255,397 @@
       }
 
       .form-group label {
-        margin-bottom: 5px;
+        margin-bottom: 6px;
         font-weight: 600;
-        color: #555;
-        font-size: 0.9em;
+        color: var(--muted);
+        font-size: 0.8rem;
       }
 
-      .form-group input {
-        padding: 12px;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        font-size: 1em;
-        transition: border-color 0.3s;
+      .form-group input,
+      .toolbar input,
+      .toolbar select,
+      .intrinsic-edit input {
+        padding: 11px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        background: var(--surface);
+        color: var(--ink);
+        transition: border-color 0.2s, box-shadow 0.2s;
       }
 
-      .form-group input:focus {
+      .form-group input:focus,
+      .toolbar input:focus,
+      .toolbar select:focus,
+      .intrinsic-edit input:focus {
         outline: none;
-        border-color: #667eea;
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px rgba(31, 111, 139, 0.15);
       }
 
       .btn {
-        padding: 12px 30px;
+        padding: 11px 16px;
         border: none;
-        border-radius: 8px;
-        font-size: 1em;
+        border-radius: 10px;
+        font-size: 0.88rem;
         font-weight: 600;
+        font-family: inherit;
         cursor: pointer;
-        transition: all 0.3s;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        transition: 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn:active {
+        transform: translateY(0);
       }
 
       .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: var(--brand);
         color: white;
       }
 
       .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        background: var(--brand-deep);
       }
 
       .btn-success {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        background: var(--buy);
         color: white;
-        padding: 8px 20px;
-        font-size: 0.9em;
       }
 
       .btn-danger {
-        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
-        color: white;
-        padding: 8px 20px;
-        font-size: 0.9em;
+        background: var(--danger-soft);
+        color: var(--danger);
       }
 
-      .btn-info {
-        background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);
-        color: white;
-        padding: 8px 20px;
-        font-size: 0.9em;
+      .btn-ghost {
+        background: var(--surface);
+        color: var(--muted);
+        border: 1px solid var(--line);
       }
 
-      .stocks-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0 10px;
+      .btn-ghost:hover {
+        color: var(--ink);
+        border-color: #b8c5d4;
       }
 
-      .stocks-table thead th {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 15px;
-        text-align: left;
+      .btn-sm {
+        padding: 7px 10px;
+        font-size: 0.78rem;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .toolbar .search {
+        flex: 1;
+        min-width: 180px;
+      }
+
+      .toolbar select {
+        min-width: 140px;
+      }
+
+      .filter-chips {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .chip {
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--muted);
+        border-radius: 999px;
+        padding: 7px 12px;
+        font-size: 0.8rem;
         font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.85em;
-        letter-spacing: 1px;
+        font-family: inherit;
+        cursor: pointer;
       }
 
-      .stocks-table thead th:first-child {
-        border-radius: 10px 0 0 10px;
+      .chip.active {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: white;
       }
 
-      .stocks-table thead th:last-child {
-        border-radius: 0 10px 10px 0;
+      .chip .count {
+        margin-left: 4px;
+        opacity: 0.8;
       }
 
-      .stock-row {
-        background: white;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      .toolbar-actions {
+        display: flex;
+        gap: 8px;
+        margin-left: auto;
+        flex-wrap: wrap;
       }
 
-      .stock-row td {
-        padding: 15px;
-        border-top: 1px solid #f0f0f0;
-        border-bottom: 1px solid #f0f0f0;
+      .file-input-hidden {
+        display: none;
       }
 
-      .stock-row td:first-child {
-        border-left: 1px solid #f0f0f0;
-        border-radius: 10px 0 0 10px;
+      .stocks-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .stock-card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+        overflow: hidden;
+      }
+
+      .stock-card.has-buy {
+        border-color: #8fd0ad;
+        box-shadow: 0 0 0 1px rgba(27, 122, 78, 0.12);
+      }
+
+      .stock-card-head {
+        display: grid;
+        grid-template-columns: minmax(120px, 0.9fr) minmax(140px, 1fr) minmax(180px, 1.2fr) auto;
+        gap: 16px;
+        padding: 16px 18px;
+        background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        border-bottom: 1px solid var(--line);
+        align-items: start;
+      }
+
+      .stock-name {
+        font-size: 1.15rem;
         font-weight: 700;
-        color: #333;
+        letter-spacing: -0.02em;
       }
 
-      .stock-row td:last-child {
-        border-right: 1px solid #f0f0f0;
-        border-radius: 0 10px 10px 0;
+      .stock-meta {
+        margin-top: 6px;
+        font-size: 0.78rem;
+        color: var(--muted);
       }
 
-      .price-row {
-        background: #fafafa;
+      .price-block .current-price {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 600;
+        font-size: 1.2rem;
+        color: var(--brand-deep);
       }
 
-      .price-row td {
-        padding: 12px 15px;
-        font-size: 0.95em;
+      .price-change {
+        display: inline-block;
+        margin-top: 4px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.82rem;
+        font-weight: 600;
       }
 
-      .stock-row.row-odd {
-        background: #eef2ff;
+      .price-change.positive {
+        color: var(--up);
       }
-      .price-row.row-odd {
-        background: #f3f6ff;
+      .price-change.negative {
+        color: var(--down);
       }
-      .stock-row.row-even {
-        background: #fff9f2;
+
+      .range-meter {
+        margin-top: 10px;
       }
-      .price-row.row-even {
-        background: #fffcf5;
+
+      .range-meter-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.72rem;
+        color: var(--muted);
+        margin-bottom: 4px;
+        font-family: "JetBrains Mono", monospace;
       }
-      .stock-row.target-reached,
-      .price-row.target-reached {
-        background: #c8f5c8 !important;
+
+      .range-track {
+        height: 6px;
+        border-radius: 999px;
+        background: #e2eaf2;
+        position: relative;
+        overflow: hidden;
       }
-      .stock-row.target-reached td:first-child {
-        border-left: 4px solid #2e7d32;
+
+      .range-fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        background: linear-gradient(90deg, #1b7a4e, #1f6f8b, #c0392b);
+        opacity: 0.35;
+      }
+
+      .range-marker {
+        position: absolute;
+        top: -3px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--brand);
+        border: 2px solid white;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        transform: translateX(-50%);
+      }
+
+      .intrinsic-box {
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+
+      .intrinsic-box .label-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .intrinsic-edit {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .intrinsic-edit input {
+        width: 110px;
+        padding: 8px 10px;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      .intrinsic-vs {
+        margin-top: 6px;
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+
+      .intrinsic-vs.undervalued {
+        color: var(--up);
+      }
+      .intrinsic-vs.overvalued {
+        color: var(--down);
+      }
+      .intrinsic-vs.fair {
+        color: var(--muted);
+      }
+
+      .stock-actions {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+      }
+
+      .levels-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .levels-table th {
+        text-align: left;
+        padding: 10px 16px;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--line);
+        font-weight: 600;
+      }
+
+      .levels-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #eef2f7;
+        vertical-align: middle;
+        font-size: 0.92rem;
+      }
+
+      .levels-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .levels-table tr.target-reached {
+        background: var(--buy-soft);
+      }
+
+      .levels-table tr.is-done {
+        background: var(--done-soft);
+        opacity: 0.85;
+      }
+
+      .mono {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 500;
+      }
+
+      .target-main {
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 600;
+      }
+
+      .vs-market,
+      .vs-intrinsic {
+        display: block;
+        font-size: 0.75rem;
+        margin-top: 3px;
+        font-weight: 600;
+      }
+
+      .vs-market.below,
+      .vs-intrinsic.safe {
+        color: var(--up);
+      }
+
+      .vs-market.above,
+      .vs-intrinsic.risky {
+        color: var(--down);
+      }
+
+      .vs-market.flat,
+      .vs-intrinsic.flat {
+        color: var(--muted);
       }
 
       .status-badge {
-        display: inline-block;
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 0.85em;
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
         text-transform: uppercase;
-        letter-spacing: 1px;
       }
 
       .status-wait {
-        background: #ff9800;
-        color: white;
+        background: var(--wait-soft);
+        color: var(--wait);
       }
 
       .status-buy {
-        background: #4caf50;
+        background: var(--buy);
         color: white;
         animation: pulse 2s infinite;
       }
 
       .status-done {
-        background: #9e9e9e;
-        color: white;
+        background: #dde3ea;
+        color: var(--done);
       }
 
       @keyframes pulse {
@@ -341,201 +654,86 @@
           opacity: 1;
         }
         50% {
-          opacity: 0.7;
+          opacity: 0.75;
         }
-      }
-
-      .current-price {
-        font-weight: 700;
-        color: #667eea;
-        font-size: 1.1em;
-      }
-
-      .price-change {
-        display: block;
-        font-size: 0.85em;
-        margin-top: 6px;
-      }
-
-      .price-change.positive {
-        color: #2e7d32;
-      }
-
-      .price-change.negative {
-        color: #c62828;
-      }
-
-      .range-info {
-        display: block;
-        font-size: 0.8em;
-        color: #555;
-        margin-top: 6px;
-      }
-
-      .range-info strong {
-        display: inline-block;
-        width: 110px;
-        color: #666;
-        font-weight: 600;
-      }
-
-      .vs-market {
-        display: block;
-        font-size: 0.8em;
-        margin-top: 4px;
-        font-weight: 600;
-      }
-
-      .vs-market.below {
-        color: #2e7d32;
-      }
-
-      .vs-market.above {
-        color: #c62828;
-      }
-
-      .vs-market.flat {
-        color: #666;
-      }
-
-      .intrinsic-edit {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 6px;
-        flex-wrap: wrap;
-      }
-
-      .intrinsic-edit label {
-        font-size: 0.8em;
-        font-weight: 600;
-        color: #666;
-        min-width: 110px;
-      }
-
-      .intrinsic-edit input {
-        width: 100px;
-        padding: 6px 8px;
-        border: 2px solid #ddd;
-        border-radius: 6px;
-        font-size: 0.85em;
-      }
-
-      .intrinsic-edit input:focus {
-        outline: none;
-        border-color: #667eea;
-      }
-
-      .intrinsic-edit .intrinsic-date {
-        font-size: 0.75em;
-        color: #888;
-      }
-
-      .intrinsic-edit .btn-save-intrinsic {
-        padding: 5px 10px;
-        font-size: 0.75em;
-        text-transform: none;
-      }
-
-      .loading {
-        color: #999;
-        font-style: italic;
-      }
-
-      .error {
-        color: #f44336;
-        font-size: 0.9em;
       }
 
       .action-buttons {
         display: flex;
-        gap: 10px;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
       }
 
       .empty-state {
         text-align: center;
-        padding: 60px 20px;
-        color: #999;
-      }
-
-      .empty-state svg {
-        width: 120px;
-        height: 120px;
-        margin-bottom: 20px;
-        opacity: 0.3;
+        padding: 56px 20px;
+        color: var(--muted);
+        border: 1px dashed var(--line);
+        border-radius: var(--radius);
+        background: var(--surface-2);
       }
 
       .empty-state h3 {
-        font-size: 1.5em;
-        margin-bottom: 10px;
+        font-size: 1.2rem;
+        margin-bottom: 6px;
+        color: var(--ink);
       }
 
-      .api-key-section {
-        background: #fff3cd;
-        border: 2px solid #ffc107;
-        padding: 15px;
-        border-radius: 10px;
-        margin-bottom: 20px;
+      .loading {
+        color: var(--muted);
+        font-style: italic;
+        font-size: 0.9rem;
       }
 
-      .api-key-section h4 {
-        margin-bottom: 10px;
-        color: #856404;
-      }
-
-      .api-key-section input {
-        width: 100%;
-        max-width: 500px;
-        padding: 10px;
-        border: 2px solid #ffc107;
-        border-radius: 5px;
-        margin-right: 10px;
-      }
-
-      .api-key-section .btn {
-        padding: 10px 20px;
-      }
-
-      .refresh-prices {
-        float: right;
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-        padding: 10px 20px;
-        margin-bottom: 15px;
-      }
-
-      .csv-actions {
+      .list-summary {
         display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-bottom: 15px;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        color: var(--muted);
+        font-size: 0.85rem;
       }
 
-      .btn-secondary {
-        background: linear-gradient(135deg, #606c88 0%, #3f4c6b 100%);
-        color: white;
-        padding: 10px 20px;
-      }
+      @media (max-width: 1100px) {
+        .summary-cards {
+          grid-template-columns: repeat(3, 1fr);
+        }
 
-      .file-input-hidden {
-        display: none;
+        .stock-card-head {
+          grid-template-columns: 1fr 1fr;
+        }
       }
 
       @media (max-width: 768px) {
+        body {
+          padding: 12px;
+        }
+
+        .summary-cards {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
         .form-grid {
           grid-template-columns: 1fr;
         }
 
-        .summary-cards {
+        .stock-card-head {
           grid-template-columns: 1fr;
         }
 
-        .stocks-table {
-          font-size: 0.85em;
+        .toolbar-actions {
+          margin-left: 0;
+          width: 100%;
+        }
+
+        .levels-table {
+          display: block;
+          overflow-x: auto;
         }
 
         .action-buttons {
-          flex-direction: column;
+          justify-content: flex-start;
         }
       }
     </style>
@@ -543,190 +741,227 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>📈 Stock Buy Plan Manager</h1>
-        <p>Smart planning for your investment journey</p>
+        <div class="header-brand">
+          <h1>BuyPlan</h1>
+          <p>Plan entries by target price, track market distance & intrinsic value</p>
+        </div>
+        <div class="header-meta">
+          <span class="pill">Yahoo Finance live quotes</span>
+          <span class="pill">Saved in this browser</span>
+        </div>
       </div>
 
       <div class="summary-cards">
         <div class="summary-card required">
-          <h3>💰 Total Required</h3>
+          <h3>Capital Needed</h3>
           <div class="amount" id="totalRequired">₹0</div>
         </div>
         <div class="summary-card invested">
-          <h3>✅ Total Invested</h3>
+          <h3>Invested</h3>
           <div class="amount" id="totalInvested">₹0</div>
         </div>
         <div class="summary-card pending">
-          <h3>⏳ Pending Orders</h3>
+          <h3>Pending</h3>
           <div class="amount" id="pendingOrders">0</div>
         </div>
         <div class="summary-card buy-now">
-          <h3>🟢 Buy Now</h3>
+          <h3>Buy Now</h3>
           <div class="amount" id="buyNowCount">0</div>
         </div>
         <div class="summary-card india-total">
-          <h3>🇮🇳 India Total</h3>
+          <h3>India Plan</h3>
           <div class="amount" id="indiaTotalAmount">₹0</div>
         </div>
         <div class="summary-card us-total">
-          <h3>🇺🇸 US Total</h3>
+          <h3>US Plan</h3>
           <div class="amount" id="usTotalAmount">$0</div>
         </div>
       </div>
 
-      <div class="tabs">
-        <button class="tab active" onclick="switchTab('india')">
-          🇮🇳 India (NSE/BSE)
-        </button>
-        <button class="tab" onclick="switchTab('us')">🇺🇸 US Markets</button>
-      </div>
-
-      <div class="content">
-        <!-- India Tab -->
-        <div class="tab-content active" id="india-tab">
-          <div class="api-key-section">
-            <h4>📡 Stock Price API Configuration</h4>
-            <p style="margin-bottom: 10px; color: #856404; font-size: 0.9em">
-              Using <strong>Yahoo Finance</strong> — No API key needed!
-              Unlimited real-time quotes.
-            </p>
-            <p
-              id="indiaApiStatus"
-              style="margin-top: 10px; color: #856404; font-size: 0.85em"
-            ></p>
-          </div>
-
-          <div class="add-stock-section">
-            <h2>➕ Add New Stock Entry</h2>
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Stock Symbol/Name</label>
-                <input
-                  type="text"
-                  id="indiaStockName"
-                  placeholder="e.g., TCS.NS or RELIANCE.NS"
-                />
-              </div>
-              <div class="form-group">
-                <label>Expected Buy Price (₹)</label>
-                <input
-                  type="number"
-                  id="indiaExpectedPrice"
-                  placeholder="0.00"
-                  step="0.01"
-                />
-              </div>
-              <div class="form-group">
-                <label>Quantity</label>
-                <input
-                  type="number"
-                  id="indiaQuantity"
-                  placeholder="0"
-                  step="1"
-                />
-              </div>
-            </div>
-            <button class="btn btn-primary" onclick="addStock('india')">
-              Add to Plan
-            </button>
-          </div>
-
-          <button class="btn refresh-prices" onclick="refreshPrices('india')">
-            🔄 Refresh Prices
+      <div class="panel">
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('india')">
+            India (NSE/BSE)
           </button>
-          <div class="csv-actions">
-            <button
-              class="btn btn-secondary"
-              onclick="exportMarketCsv('india')"
-            >
-              ⬇ Export CSV
-            </button>
-            <button class="btn btn-secondary" onclick="triggerImport('india')">
-              ⬆ Import CSV
-            </button>
-            <input
-              class="file-input-hidden"
-              type="file"
-              id="indiaCsvInput"
-              accept=".csv,text/csv"
-              onchange="importMarketCsv('india', event)"
-            />
-          </div>
-          <div style="clear: both"></div>
-
-          <div id="indiaStocksList"></div>
+          <button class="tab" onclick="switchTab('us')">US Markets</button>
         </div>
 
-        <!-- US Tab -->
-        <div class="tab-content" id="us-tab">
-          <div class="api-key-section">
-            <h4>📡 Stock Price API Configuration</h4>
-            <p style="margin-bottom: 10px; color: #856404; font-size: 0.9em">
-              Using <strong>Yahoo Finance</strong> — No API key needed!
-              Unlimited real-time quotes.
-            </p>
-            <p
-              id="usApiStatus"
-              style="margin-top: 10px; color: #856404; font-size: 0.85em"
-            ></p>
-          </div>
+        <div class="content">
+          <!-- India Tab -->
+          <div class="tab-content active" id="india-tab">
+            <div class="status-bar">
+              <div>
+                <strong>Live prices</strong>
+                <span class="hint"> — Yahoo Finance via proxy</span>
+              </div>
+              <div id="indiaApiStatus" class="api-msg"></div>
+            </div>
 
-          <div class="add-stock-section">
-            <h2>➕ Add New Stock Entry</h2>
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Stock Symbol</label>
-                <input
-                  type="text"
-                  id="usStockName"
-                  placeholder="e.g., AAPL, MSFT, GOOGL"
-                />
+            <div class="add-stock-section">
+              <h2>Add buy level</h2>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Symbol</label>
+                  <input
+                    type="text"
+                    id="indiaStockName"
+                    placeholder="e.g. RELIANCE.NS"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Target buy price (₹)</label>
+                  <input
+                    type="number"
+                    id="indiaExpectedPrice"
+                    placeholder="0.00"
+                    step="0.01"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Quantity</label>
+                  <input
+                    type="number"
+                    id="indiaQuantity"
+                    placeholder="0"
+                    step="1"
+                  />
+                </div>
+                <button class="btn btn-primary" onclick="addStock('india')">
+                  Add to plan
+                </button>
               </div>
-              <div class="form-group">
-                <label>Expected Buy Price ($)</label>
-                <input
-                  type="number"
-                  id="usExpectedPrice"
-                  placeholder="0.00"
-                  step="0.01"
-                />
+            </div>
+
+            <div class="toolbar">
+              <input
+                class="search"
+                type="search"
+                id="indiaSearch"
+                placeholder="Search symbol…"
+                oninput="setListFilter('india', 'search', this.value)"
+              />
+              <div class="filter-chips" id="indiaFilterChips">
+                <button class="chip active" data-filter="all" onclick="setListFilter('india','status','all')">All</button>
+                <button class="chip" data-filter="buy" onclick="setListFilter('india','status','buy')">Buy now</button>
+                <button class="chip" data-filter="wait" onclick="setListFilter('india','status','wait')">Waiting</button>
+                <button class="chip" data-filter="done" onclick="setListFilter('india','status','done')">Done</button>
               </div>
-              <div class="form-group">
-                <label>Quantity</label>
+              <select id="indiaSort" onchange="setListFilter('india','sort', this.value)">
+                <option value="buyFirst">Sort: Buy now first</option>
+                <option value="discount">Sort: Deepest discount</option>
+                <option value="symbol">Sort: Symbol A–Z</option>
+                <option value="amount">Sort: Largest amount</option>
+              </select>
+              <div class="toolbar-actions">
+                <button class="btn btn-primary btn-sm" onclick="refreshPrices('india')">
+                  Refresh prices
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="exportMarketCsv('india')">
+                  Export CSV
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="triggerImport('india')">
+                  Import CSV
+                </button>
                 <input
-                  type="number"
-                  id="usQuantity"
-                  placeholder="0"
-                  step="0.01"
+                  class="file-input-hidden"
+                  type="file"
+                  id="indiaCsvInput"
+                  accept=".csv,text/csv"
+                  onchange="importMarketCsv('india', event)"
                 />
               </div>
             </div>
-            <button class="btn btn-primary" onclick="addStock('us')">
-              Add to Plan
-            </button>
+
+            <div id="indiaStocksList" class="stocks-list"></div>
           </div>
 
-          <button class="btn refresh-prices" onclick="refreshPrices('us')">
-            🔄 Refresh Prices
-          </button>
-          <div class="csv-actions">
-            <button class="btn btn-secondary" onclick="exportMarketCsv('us')">
-              ⬇ Export CSV
-            </button>
-            <button class="btn btn-secondary" onclick="triggerImport('us')">
-              ⬆ Import CSV
-            </button>
-            <input
-              class="file-input-hidden"
-              type="file"
-              id="usCsvInput"
-              accept=".csv,text/csv"
-              onchange="importMarketCsv('us', event)"
-            />
-          </div>
-          <div style="clear: both"></div>
+          <!-- US Tab -->
+          <div class="tab-content" id="us-tab">
+            <div class="status-bar">
+              <div>
+                <strong>Live prices</strong>
+                <span class="hint"> — Yahoo Finance via proxy</span>
+              </div>
+              <div id="usApiStatus" class="api-msg"></div>
+            </div>
 
-          <div id="usStocksList"></div>
+            <div class="add-stock-section">
+              <h2>Add buy level</h2>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Symbol</label>
+                  <input
+                    type="text"
+                    id="usStockName"
+                    placeholder="e.g. AAPL"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Target buy price ($)</label>
+                  <input
+                    type="number"
+                    id="usExpectedPrice"
+                    placeholder="0.00"
+                    step="0.01"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Quantity</label>
+                  <input
+                    type="number"
+                    id="usQuantity"
+                    placeholder="0"
+                    step="0.01"
+                  />
+                </div>
+                <button class="btn btn-primary" onclick="addStock('us')">
+                  Add to plan
+                </button>
+              </div>
+            </div>
+
+            <div class="toolbar">
+              <input
+                class="search"
+                type="search"
+                id="usSearch"
+                placeholder="Search symbol…"
+                oninput="setListFilter('us', 'search', this.value)"
+              />
+              <div class="filter-chips" id="usFilterChips">
+                <button class="chip active" data-filter="all" onclick="setListFilter('us','status','all')">All</button>
+                <button class="chip" data-filter="buy" onclick="setListFilter('us','status','buy')">Buy now</button>
+                <button class="chip" data-filter="wait" onclick="setListFilter('us','status','wait')">Waiting</button>
+                <button class="chip" data-filter="done" onclick="setListFilter('us','status','done')">Done</button>
+              </div>
+              <select id="usSort" onchange="setListFilter('us','sort', this.value)">
+                <option value="buyFirst">Sort: Buy now first</option>
+                <option value="discount">Sort: Deepest discount</option>
+                <option value="symbol">Sort: Symbol A–Z</option>
+                <option value="amount">Sort: Largest amount</option>
+              </select>
+              <div class="toolbar-actions">
+                <button class="btn btn-primary btn-sm" onclick="refreshPrices('us')">
+                  Refresh prices
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="exportMarketCsv('us')">
+                  Export CSV
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="triggerImport('us')">
+                  Import CSV
+                </button>
+                <input
+                  class="file-input-hidden"
+                  type="file"
+                  id="usCsvInput"
+                  accept=".csv,text/csv"
+                  onchange="importMarketCsv('us', event)"
+                />
+              </div>
+            </div>
+
+            <div id="usStocksList" class="stocks-list"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -741,6 +976,11 @@
       let apiKeys = {
         india: "",
         us: "",
+      };
+
+      const listFilters = {
+        india: { status: "all", search: "", sort: "buyFirst" },
+        us: { status: "all", search: "", sort: "buyFirst" },
       };
 
       function ensureProxyTemplateConfigured() {
@@ -788,13 +1028,9 @@
         localStorage.setItem("apiKeys", JSON.stringify(apiKeys));
       }
 
-      // Save API key
       function saveApiKey(market) {
         const input = document.getElementById(`${market}ApiKey`);
-        if (!input) {
-          return;
-        }
-
+        if (!input) return;
         const key = input.value.trim();
         apiKeys[market] = key;
         saveData();
@@ -804,11 +1040,9 @@
 
       function setApiStatus(market, message, isError = false) {
         const el = document.getElementById(`${market}ApiStatus`);
-        if (!el) {
-          return;
-        }
-        el.textContent = message;
-        el.style.color = isError ? "#f44336" : "#856404";
+        if (!el) return;
+        el.textContent = message || "";
+        el.classList.toggle("error", !!isError);
       }
 
       function getYahooChartUrl(symbol) {
@@ -1297,6 +1531,15 @@
             };
           }
 
+
+          // Don't overwrite manually entered intrinsic values
+          const existingManual =
+            stocks[market][symbol] &&
+            stocks[market][symbol].intrinsicDate === "manual";
+          if (existingManual) {
+            return;
+          }
+
           stocks[market][symbol].intrinsicValue =
             intrinsic != null && Number.isFinite(intrinsic)
               ? parseFloat(intrinsic.toFixed(2))
@@ -1320,21 +1563,46 @@
 
       // Switch tabs
       function switchTab(tabName) {
-        // Update tab buttons
         document
           .querySelectorAll(".tab")
           .forEach((tab) => tab.classList.remove("active"));
-        event.target.classList.add("active");
+        if (event && event.target) {
+          event.target.classList.add("active");
+        } else {
+          document
+            .querySelectorAll(".tab")
+            .forEach((tab) => {
+              if (
+                tab.textContent.toLowerCase().includes(tabName === "india" ? "india" : "us")
+              ) {
+                tab.classList.add("active");
+              }
+            });
+        }
 
-        // Update tab content
         document
           .querySelectorAll(".tab-content")
           .forEach((content) => content.classList.remove("active"));
         document.getElementById(`${tabName}-tab`).classList.add("active");
 
-        // Update display
         renderStocks(tabName);
         updateSummary();
+      }
+
+      function setListFilter(market, key, value) {
+        listFilters[market][key] = value;
+        if (key === "status") {
+          const chips = document.getElementById(`${market}FilterChips`);
+          if (chips) {
+            chips.querySelectorAll(".chip").forEach((chip) => {
+              chip.classList.toggle(
+                "active",
+                chip.getAttribute("data-filter") === value,
+              );
+            });
+          }
+        }
+        renderStocks(market);
       }
 
       // Add stock
@@ -1379,7 +1647,6 @@
           id: Date.now(),
         });
 
-        // Clear inputs
         document.getElementById(`${market}StockName`).value = "";
         document.getElementById(`${market}ExpectedPrice`).value = "";
         document.getElementById(`${market}Quantity`).value = "";
@@ -1390,12 +1657,10 @@
         fetchStockPrice(stockName, market);
       }
 
-      // Yahoo Finance accepts symbols as-is, including .NS, .BSE, etc.
       function getYahooSymbol(symbol) {
         return symbol.trim().toUpperCase();
       }
 
-      // Fetch stock price from Yahoo Finance
       async function fetchStockPrice(symbol, market) {
         try {
           const yahooSymbol = getYahooSymbol(symbol);
@@ -1530,7 +1795,7 @@
 
         for (const symbol of stockSymbols) {
           await fetchStockPrice(symbol, market);
-          await new Promise((resolve) => setTimeout(resolve, 500)); // Yahoo Finance: no rate limits
+          await new Promise((resolve) => setTimeout(resolve, 500));
           try {
             await fetchIntrinsicValue(symbol, market);
             await new Promise((resolve) => setTimeout(resolve, 300));
@@ -1672,6 +1937,7 @@
 
         const trimmed = String(rawValue ?? "").trim();
         if (trimmed === "") {
+          if (stock.intrinsicValue == null) return;
           stock.intrinsicValue = null;
           stock.intrinsicDate = null;
           saveData();
@@ -1685,7 +1951,12 @@
           return;
         }
 
-        stock.intrinsicValue = parseFloat(value.toFixed(2));
+        const next = parseFloat(value.toFixed(2));
+        if (stock.intrinsicValue === next) {
+          return;
+        }
+
+        stock.intrinsicValue = next;
         stock.intrinsicDate = "manual";
         saveData();
         renderStocks(market);
@@ -1700,7 +1971,6 @@
         const stock = stocks[market][stockName];
         stock.entries = stock.entries.filter((e) => e.id !== entryId);
 
-        // Remove stock if no entries left
         if (stock.entries.length === 0) {
           delete stocks[market][stockName];
         }
@@ -1924,193 +2194,351 @@
         event.target.value = "";
       }
 
+      function formatPct(value) {
+        const sign = value > 0 ? "+" : "";
+        return `${sign}${value.toFixed(2)}%`;
+      }
+
+      function entryStatus(entry, currentPrice) {
+        if (entry.bought) return "done";
+        if (currentPrice != null && currentPrice <= entry.expectedPrice)
+          return "buy";
+        return "wait";
+      }
+
+      function stockSortMetrics(stock) {
+        const currentPrice = stock.currentPrice;
+        let hasBuy = false;
+        let bestDiscount = -Infinity;
+        let pendingAmount = 0;
+        let pendingCount = 0;
+        let buyCount = 0;
+        let waitCount = 0;
+        let doneCount = 0;
+
+        stock.entries.forEach((entry) => {
+          const status = entryStatus(entry, currentPrice);
+          if (status === "buy") {
+            hasBuy = true;
+            buyCount++;
+          } else if (status === "wait") waitCount++;
+          else doneCount++;
+
+          if (!entry.bought) {
+            pendingAmount += entry.expectedPrice * entry.quantity;
+            pendingCount++;
+            if (currentPrice != null && currentPrice > 0) {
+              const disc =
+                ((currentPrice - entry.expectedPrice) / currentPrice) * 100;
+              if (disc > bestDiscount) bestDiscount = disc;
+            }
+          }
+        });
+
+        return {
+          hasBuy,
+          bestDiscount,
+          pendingAmount,
+          pendingCount,
+          buyCount,
+          waitCount,
+          doneCount,
+        };
+      }
+
       // Render stocks
       function renderStocks(market) {
         const container = document.getElementById(`${market}StocksList`);
-        const stockSymbols = Object.keys(stocks[market]);
         const currency = market === "india" ? "₹" : "$";
+        const filters = listFilters[market];
+        let stockSymbols = Object.keys(stocks[market]);
 
         if (stockSymbols.length === 0) {
           container.innerHTML = `
-                    <div class="empty-state">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
-                        </svg>
-                        <h3>No stocks added yet</h3>
-                        <p>Add your first stock using the form above</p>
-                    </div>
-                `;
+            <div class="empty-state">
+              <h3>No stocks in this plan yet</h3>
+              <p>Add a symbol, target price, and quantity above</p>
+            </div>`;
           return;
         }
 
-        let html = '<table class="stocks-table"><thead><tr>';
-        html += "<th>Stock</th>";
-        html += "<th>Current Price</th>";
-        html += "<th>Target Price</th>";
-        html += "<th>Quantity</th>";
-        html += "<th>Total Amount</th>";
-        html += "<th>Status</th>";
-        html += "<th>Actions</th>";
-        html += "</tr></thead><tbody>";
-
-        stockSymbols.forEach((symbol, stockIndex) => {
+        // Counts for chips
+        let countAll = 0;
+        let countBuy = 0;
+        let countWait = 0;
+        let countDone = 0;
+        stockSymbols.forEach((symbol) => {
           const stock = stocks[market][symbol];
-          const sortedEntries = [...stock.entries].sort((a, b) => {
-            if (a.expectedPrice === b.expectedPrice) {
-              return a.id - b.id;
-            }
-            return b.expectedPrice - a.expectedPrice;
-          });
-          const rowspan = sortedEntries.length;
-          const altClass = stockIndex % 2 === 0 ? "row-even" : "row-odd";
-
-          sortedEntries.forEach((entry, index) => {
-            const totalAmount = entry.expectedPrice * entry.quantity;
-            const currentPrice = stock.currentPrice;
-
-            let status = "WAIT";
-            let statusClass = "status-wait";
-
-            if (entry.bought) {
-              status = "DONE";
-              statusClass = "status-done";
-            } else if (currentPrice && currentPrice <= entry.expectedPrice) {
-              status = "BUY NOW!";
-              statusClass = "status-buy";
-            }
-
-            const targetReached =
-              !entry.bought &&
-              currentPrice !== null &&
-              currentPrice <= entry.expectedPrice;
-            const targetClass = targetReached ? " target-reached" : "";
-
-            html +=
-              index === 0
-                ? `<tr class="stock-row ${altClass}${targetClass}">`
-                : `<tr class="price-row ${altClass}${targetClass}">`;
-
-            if (index === 0) {
-              html += `<td rowspan="${rowspan}"><strong>${stock.name}</strong></td>`;
-
-              // Current price + change (rowspan)
-              html += `<td rowspan="${rowspan}">`;
-              if (currentPrice !== null) {
-                html += `<span class="current-price">${currency}${currentPrice.toFixed(2)}</span>`;
-
-                if (
-                  (stock.changePercent !== null &&
-                    stock.changePercent !== undefined) ||
-                  (stock.change !== null && stock.change !== undefined)
-                ) {
-                  // Prefer percent when available, fallback to absolute change
-                  const primary =
-                    stock.changePercent != null
-                      ? stock.changePercent
-                      : stock.change;
-                  const sign = primary > 0 ? "+" : primary < 0 ? "" : "";
-                  const changeClass =
-                    primary > 0 ? "positive" : primary < 0 ? "negative" : "";
-                  const pctText =
-                    stock.changePercent != null
-                      ? `${stock.changePercent.toFixed(2)}%`
-                      : null;
-                  const absText =
-                    stock.change != null ? `${stock.change.toFixed(2)}` : null;
-                  const display = pctText
-                    ? `${sign}${pctText}`
-                    : `${sign}${absText}`;
-                  html += `<span class="price-change ${changeClass}">${display}</span>`;
-                }
-
-                // Show percent from 52-week low / high below current price
-                if (
-                  stock.fiftyTwoWeekLow != null &&
-                  Number.isFinite(stock.fiftyTwoWeekLow)
-                ) {
-                  const lowPct =
-                    ((currentPrice - stock.fiftyTwoWeekLow) /
-                      stock.fiftyTwoWeekLow) *
-                    100;
-                  const lowSign = lowPct > 0 ? "+" : lowPct < 0 ? "" : "";
-                  const lowClass =
-                    lowPct > 0 ? "positive" : lowPct < 0 ? "negative" : "";
-                  html += `<span class="range-info"><strong>From 52W Low:</strong><span>${currency}${stock.fiftyTwoWeekLow.toFixed(2)}</span> <span class="price-change ${lowClass}">${lowSign}${lowPct.toFixed(2)}%</span></span>`;
-                }
-
-                if (
-                  stock.fiftyTwoWeekHigh != null &&
-                  Number.isFinite(stock.fiftyTwoWeekHigh)
-                ) {
-                  const highPct =
-                    ((currentPrice - stock.fiftyTwoWeekHigh) /
-                      stock.fiftyTwoWeekHigh) *
-                    100;
-                  const highSign = highPct > 0 ? "+" : highPct < 0 ? "" : "";
-                  const highClass =
-                    highPct > 0 ? "positive" : highPct < 0 ? "negative" : "";
-                  html += `<span class="range-info"><strong>From 52W High:</strong><span>${currency}${stock.fiftyTwoWeekHigh.toFixed(2)}</span> <span class="price-change ${highClass}">${highSign}${highPct.toFixed(2)}%</span></span>`;
-                }
-              } else {
-                html += '<span class="loading">Loading...</span>';
-              }
-
-              const intrinsicVal =
-                stock.intrinsicValue != null &&
-                Number.isFinite(stock.intrinsicValue)
-                  ? stock.intrinsicValue
-                  : "";
-              const intrinsicDateAttr = stock.intrinsicDate
-                ? String(stock.intrinsicDate).replace(/"/g, "&quot;")
-                : "";
-              html += `<div class="intrinsic-edit">`;
-              html += `<label>Intrinsic:</label>`;
-              html += `<input type="number" step="0.01" min="0" value="${intrinsicVal}" placeholder="0.00" onkeydown="if(event.key==='Enter'){updateIntrinsicValue('${market}','${encodeURIComponent(symbol)}',this.value)}" />`;
-              html += `<button class="btn btn-info btn-save-intrinsic" onclick="updateIntrinsicValue('${market}','${encodeURIComponent(symbol)}',this.previousElementSibling.value)">Save</button>`;
-              if (stock.intrinsicDate) {
-                html += `<span class="intrinsic-date" title="${intrinsicDateAttr}">${stock.intrinsicDate}</span>`;
-              }
-              html += `</div>`;
-              html += "</td>";
-
-              // (52W Low/High values are shown as percent lines under current price)
-            }
-
-            let targetCell = `${currency}${entry.expectedPrice.toFixed(2)}`;
-            if (currentPrice !== null && Number.isFinite(currentPrice) && currentPrice > 0) {
-              const vsMarketPct =
-                ((entry.expectedPrice - currentPrice) / currentPrice) * 100;
-              const vsSign = vsMarketPct > 0 ? "+" : "";
-              const vsClass =
-                vsMarketPct < 0 ? "below" : vsMarketPct > 0 ? "above" : "flat";
-              const vsLabel =
-                vsMarketPct < 0
-                  ? `${Math.abs(vsMarketPct).toFixed(2)}% below market`
-                  : vsMarketPct > 0
-                    ? `${vsMarketPct.toFixed(2)}% above market`
-                    : `at market`;
-              targetCell += `<span class="vs-market ${vsClass}" title="${vsSign}${vsMarketPct.toFixed(2)}% vs market">${vsLabel}</span>`;
-            }
-            html += `<td>${targetCell}</td>`;
-            html += `<td>${entry.quantity}</td>`;
-            html += `<td><strong>${currency}${totalAmount.toFixed(2)}</strong></td>`;
-            html += `<td><span class="status-badge ${statusClass}">${status}</span></td>`;
-            html += `<td><div class="action-buttons">`;
-
-            html += `<button class="btn btn-info" onclick="editEntry('${market}', '${encodeURIComponent(symbol)}', '${entry.id}')">✎ Edit</button>`;
-            html += `<button class="btn btn-info" onclick="refreshSingleStock('${market}', '${encodeURIComponent(symbol)}')">⟳ Refresh</button>`;
-
-            if (!entry.bought) {
-              html += `<button class="btn btn-success" onclick="markAsBought('${market}', '${symbol}', ${entry.id})">✓ Bought</button>`;
-            }
-
-            html += `<button class="btn btn-danger" onclick="deleteEntry('${market}', '${symbol}', ${entry.id})">✗ Delete</button>`;
-            html += `</div></td>`;
-            html += "</tr>";
+          stock.entries.forEach((entry) => {
+            countAll++;
+            const st = entryStatus(entry, stock.currentPrice);
+            if (st === "buy") countBuy++;
+            else if (st === "wait") countWait++;
+            else countDone++;
           });
         });
 
-        html += "</tbody></table>";
+        const chips = document.getElementById(`${market}FilterChips`);
+        if (chips) {
+          chips.querySelectorAll(".chip").forEach((chip) => {
+            const f = chip.getAttribute("data-filter");
+            const n =
+              f === "all"
+                ? countAll
+                : f === "buy"
+                  ? countBuy
+                  : f === "wait"
+                    ? countWait
+                    : countDone;
+            const label =
+              f === "all"
+                ? "All"
+                : f === "buy"
+                  ? "Buy now"
+                  : f === "wait"
+                    ? "Waiting"
+                    : "Done";
+            chip.innerHTML = `${label}<span class="count">${n}</span>`;
+          });
+        }
+
+        const search = (filters.search || "").trim().toUpperCase();
+        if (search) {
+          stockSymbols = stockSymbols.filter((s) => s.includes(search));
+        }
+
+        // Filter by status — keep stock if any entry matches
+        if (filters.status !== "all") {
+          stockSymbols = stockSymbols.filter((symbol) => {
+            const stock = stocks[market][symbol];
+            return stock.entries.some(
+              (e) => entryStatus(e, stock.currentPrice) === filters.status,
+            );
+          });
+        }
+
+        // Sort stocks
+        stockSymbols.sort((a, b) => {
+          const sa = stocks[market][a];
+          const sb = stocks[market][b];
+          const ma = stockSortMetrics(sa);
+          const mb = stockSortMetrics(sb);
+          if (filters.sort === "symbol") return a.localeCompare(b);
+          if (filters.sort === "amount")
+            return mb.pendingAmount - ma.pendingAmount;
+          if (filters.sort === "discount")
+            return mb.bestDiscount - ma.bestDiscount;
+          // buyFirst
+          if (ma.hasBuy !== mb.hasBuy) return ma.hasBuy ? -1 : 1;
+          return mb.bestDiscount - ma.bestDiscount;
+        });
+
+        if (stockSymbols.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <h3>No matches</h3>
+              <p>Try another filter or search</p>
+            </div>`;
+          return;
+        }
+
+        let html = `<div class="list-summary"><span>${stockSymbols.length} stock${stockSymbols.length === 1 ? "" : "s"} shown</span></div>`;
+
+        stockSymbols.forEach((symbol) => {
+          const stock = stocks[market][symbol];
+          const metrics = stockSortMetrics(stock);
+          const currentPrice = stock.currentPrice;
+          const enc = encodeURIComponent(symbol);
+
+          let sortedEntries = [...stock.entries].sort((a, b) => {
+            if (a.expectedPrice === b.expectedPrice) return a.id - b.id;
+            return b.expectedPrice - a.expectedPrice;
+          });
+
+          if (filters.status !== "all") {
+            sortedEntries = sortedEntries.filter(
+              (e) => entryStatus(e, currentPrice) === filters.status,
+            );
+          }
+
+          if (sortedEntries.length === 0) return;
+
+          html += `<article class="stock-card${metrics.hasBuy ? " has-buy" : ""}">`;
+          html += `<div class="stock-card-head">`;
+
+          // Name
+          html += `<div>`;
+          html += `<div class="stock-name">${stock.name}</div>`;
+          html += `<div class="stock-meta">${metrics.pendingCount} pending · ${currency}${metrics.pendingAmount.toFixed(0)} capital</div>`;
+          html += `</div>`;
+
+          // Price
+          html += `<div class="price-block">`;
+          if (currentPrice !== null) {
+            html += `<div class="current-price">${currency}${currentPrice.toFixed(2)}</div>`;
+            if (
+              stock.changePercent != null ||
+              stock.change != null
+            ) {
+              const primary =
+                stock.changePercent != null ? stock.changePercent : stock.change;
+              const changeClass =
+                primary > 0 ? "positive" : primary < 0 ? "negative" : "";
+              const display =
+                stock.changePercent != null
+                  ? formatPct(stock.changePercent)
+                  : `${stock.change > 0 ? "+" : ""}${stock.change.toFixed(2)}`;
+              html += `<span class="price-change ${changeClass}">${display}</span>`;
+            }
+
+            if (
+              stock.fiftyTwoWeekLow != null &&
+              stock.fiftyTwoWeekHigh != null &&
+              stock.fiftyTwoWeekHigh > stock.fiftyTwoWeekLow
+            ) {
+              const span =
+                stock.fiftyTwoWeekHigh - stock.fiftyTwoWeekLow;
+              let pos =
+                ((currentPrice - stock.fiftyTwoWeekLow) / span) * 100;
+              pos = Math.max(0, Math.min(100, pos));
+              html += `<div class="range-meter">`;
+              html += `<div class="range-meter-labels"><span>L ${currency}${stock.fiftyTwoWeekLow.toFixed(0)}</span><span>52W</span><span>H ${currency}${stock.fiftyTwoWeekHigh.toFixed(0)}</span></div>`;
+              html += `<div class="range-track"><div class="range-fill" style="width:100%"></div><div class="range-marker" style="left:${pos}%"></div></div>`;
+              html += `</div>`;
+            }
+          } else {
+            html += `<span class="loading">Loading price…</span>`;
+          }
+          html += `</div>`;
+
+          // Intrinsic
+          const intrinsicVal =
+            stock.intrinsicValue != null && Number.isFinite(stock.intrinsicValue)
+              ? stock.intrinsicValue
+              : "";
+          html += `<div class="intrinsic-box">`;
+          html += `<div class="label-row"><span>Intrinsic</span><span>${stock.intrinsicDate && stock.intrinsicDate !== "manual" ? stock.intrinsicDate : stock.intrinsicDate === "manual" ? "manual" : ""}</span></div>`;
+          html += `<div class="intrinsic-edit">`;
+          html += `<input type="number" step="0.01" min="0" value="${intrinsicVal}" placeholder="0.00" onkeydown="if(event.key==='Enter'){updateIntrinsicValue('${market}','${enc}',this.value)}" onblur="updateIntrinsicValue('${market}','${enc}',this.value)" />`;
+          html += `<button class="btn btn-ghost btn-sm" onclick="updateIntrinsicValue('${market}','${enc}',this.previousElementSibling.value)">Save</button>`;
+          html += `</div>`;
+          if (
+            intrinsicVal !== "" &&
+            currentPrice != null &&
+            currentPrice > 0
+          ) {
+            const ivPct =
+              ((currentPrice - stock.intrinsicValue) / stock.intrinsicValue) *
+              100;
+            const ivClass =
+              ivPct < -1 ? "undervalued" : ivPct > 1 ? "overvalued" : "fair";
+            const ivLabel =
+              ivPct < -1
+                ? `Market ${Math.abs(ivPct).toFixed(1)}% below intrinsic`
+                : ivPct > 1
+                  ? `Market ${ivPct.toFixed(1)}% above intrinsic`
+                  : `Near fair value`;
+            html += `<div class="intrinsic-vs ${ivClass}">${ivLabel}</div>`;
+          }
+          html += `</div>`;
+
+          // Actions
+          html += `<div class="stock-actions">`;
+          html += `<button class="btn btn-ghost btn-sm" onclick="refreshSingleStock('${market}','${enc}')" title="Refresh">↻</button>`;
+          html += `</div>`;
+
+          html += `</div>`; // head
+
+          // Levels table
+          html += `<table class="levels-table"><thead><tr>`;
+          html += `<th>Target</th><th>Qty</th><th>Amount</th><th>Vs market</th><th>Vs intrinsic</th><th>Status</th><th></th>`;
+          html += `</tr></thead><tbody>`;
+
+          sortedEntries.forEach((entry) => {
+            const totalAmount = entry.expectedPrice * entry.quantity;
+            const status = entryStatus(entry, currentPrice);
+            const statusLabel =
+              status === "buy"
+                ? "Buy now"
+                : status === "done"
+                  ? "Done"
+                  : "Waiting";
+            const statusClass =
+              status === "buy"
+                ? "status-buy"
+                : status === "done"
+                  ? "status-done"
+                  : "status-wait";
+            const rowClass =
+              status === "buy"
+                ? "target-reached"
+                : status === "done"
+                  ? "is-done"
+                  : "";
+
+            html += `<tr class="${rowClass}">`;
+            html += `<td><span class="target-main">${currency}${entry.expectedPrice.toFixed(2)}</span></td>`;
+            html += `<td class="mono">${entry.quantity}</td>`;
+            html += `<td class="mono"><strong>${currency}${totalAmount.toFixed(2)}</strong></td>`;
+
+            // vs market — target above market = green, else red
+            html += `<td>`;
+            if (currentPrice != null && currentPrice > 0) {
+              const vsMarketPct =
+                ((entry.expectedPrice - currentPrice) / currentPrice) * 100;
+              const targetAboveMarket = entry.expectedPrice > currentPrice;
+              const vsClass = targetAboveMarket ? "below" : "above";
+              const vsLabel = targetAboveMarket
+                ? `${vsMarketPct.toFixed(1)}% above`
+                : vsMarketPct < 0
+                  ? `${Math.abs(vsMarketPct).toFixed(1)}% below`
+                  : `at market`;
+              html += `<span class="vs-market ${vsClass}">${vsLabel}</span>`;
+            } else {
+              html += `<span class="vs-market flat">—</span>`;
+            }
+            html += `</td>`;
+
+            // vs intrinsic — IV above target = green, else red
+            html += `<td>`;
+            if (
+              stock.intrinsicValue != null &&
+              Number.isFinite(stock.intrinsicValue) &&
+              stock.intrinsicValue > 0
+            ) {
+              const vsIvPct =
+                ((entry.expectedPrice - stock.intrinsicValue) /
+                  stock.intrinsicValue) *
+                100;
+              const intrinsicAboveTarget =
+                stock.intrinsicValue > entry.expectedPrice;
+              const ivClass = intrinsicAboveTarget ? "safe" : "risky";
+              const ivLabel =
+                vsIvPct < 0
+                  ? `${Math.abs(vsIvPct).toFixed(1)}% below IV`
+                  : vsIvPct > 0
+                    ? `${vsIvPct.toFixed(1)}% above IV`
+                    : `at intrinsic`;
+              html += `<span class="vs-intrinsic ${ivClass}">${ivLabel}</span>`;
+            } else {
+              html += `<span class="vs-intrinsic flat">—</span>`;
+            }
+            html += `</td>`;
+
+            html += `<td><span class="status-badge ${statusClass}">${statusLabel}</span></td>`;
+            html += `<td><div class="action-buttons">`;
+            html += `<button class="btn btn-ghost btn-sm" onclick="editEntry('${market}','${enc}','${entry.id}')">Edit</button>`;
+            if (!entry.bought) {
+              html += `<button class="btn btn-success btn-sm" onclick="markAsBought('${market}','${symbol}',${entry.id})">Bought</button>`;
+            }
+            html += `<button class="btn btn-danger btn-sm" onclick="deleteEntry('${market}','${symbol}',${entry.id})">Delete</button>`;
+            html += `</div></td>`;
+            html += `</tr>`;
+          });
+
+          html += `</tbody></table></article>`;
+        });
+
         container.innerHTML = html;
       }
 
@@ -2151,16 +2579,23 @@
           });
         });
 
+        const fmt = (n) =>
+          n >= 100000
+            ? `${(n / 100000).toFixed(2)}L`
+            : n.toLocaleString(undefined, {
+                maximumFractionDigits: 0,
+              });
+
         document.getElementById("totalRequired").textContent =
-          `₹${totalRequired.toFixed(2)}`;
+          `₹${fmt(totalRequired)}`;
         document.getElementById("totalInvested").textContent =
-          `₹${totalInvested.toFixed(2)}`;
+          `₹${fmt(totalInvested)}`;
         document.getElementById("pendingOrders").textContent = pendingOrders;
         document.getElementById("buyNowCount").textContent = buyNowCount;
         document.getElementById("indiaTotalAmount").textContent =
-          `₹${indiaTotalAmount.toFixed(2)}`;
+          `₹${fmt(indiaTotalAmount)}`;
         document.getElementById("usTotalAmount").textContent =
-          `$${usTotalAmount.toFixed(2)}`;
+          `$${usTotalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
       }
 
       // Initialize
