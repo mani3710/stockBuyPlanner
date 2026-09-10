@@ -1532,10 +1532,11 @@
           }
 
 
-          // Don't overwrite manually entered intrinsic values
+          // Don't overwrite manually entered or imported intrinsic values
           const existingManual =
             stocks[market][symbol] &&
-            stocks[market][symbol].intrinsicDate === "manual";
+            (stocks[market][symbol].intrinsicDate === "manual" ||
+              stocks[market][symbol].intrinsicDate === "import");
           if (existingManual) {
             return;
           }
@@ -2033,15 +2034,23 @@
       }
 
       function exportMarketCsv(market) {
-        const rows = [["symbol", "expectedPrice", "quantity", "bought"]];
+        const rows = [
+          ["symbol", "expectedPrice", "quantity", "bought", "intrinsicValue"],
+        ];
 
         Object.values(stocks[market]).forEach((stock) => {
+          const intrinsic =
+            stock.intrinsicValue != null &&
+            Number.isFinite(stock.intrinsicValue)
+              ? Number(stock.intrinsicValue).toFixed(2)
+              : "";
           stock.entries.forEach((entry) => {
             rows.push([
               stock.name,
               Number(entry.expectedPrice).toFixed(2),
               String(entry.quantity),
               entry.bought ? "true" : "false",
+              intrinsic,
             ]);
           });
         });
@@ -2080,6 +2089,7 @@
         }
 
         let startIndex = 0;
+        let intrinsicColIndex = 4;
         const firstLineColumns = parseCsvLine(lines[0]).map((c) =>
           c.toLowerCase(),
         );
@@ -2088,6 +2098,10 @@
           firstLineColumns[1] === "expectedprice"
         ) {
           startIndex = 1;
+          const foundIntrinsic = firstLineColumns.indexOf("intrinsicvalue");
+          if (foundIntrinsic >= 0) {
+            intrinsicColIndex = foundIntrinsic;
+          }
         }
 
         const existingSignatures = new Set();
@@ -2124,6 +2138,12 @@
             market === "us" ? parseFloat(cols[2]) : parseInt(cols[2], 10);
           const bought =
             cols[3] && String(cols[3]).toLowerCase() === "true" ? true : false;
+          const intrinsicRaw =
+            cols[intrinsicColIndex] != null
+              ? String(cols[intrinsicColIndex]).trim()
+              : "";
+          const intrinsicValue =
+            intrinsicRaw !== "" ? parseFloat(intrinsicRaw) : null;
 
           if (
             !symbol ||
@@ -2153,6 +2173,18 @@
 
           if (existingSignatures.has(signature)) {
             skippedDuplicates++;
+            // still apply intrinsic if provided for an existing duplicate row
+            if (
+              intrinsicValue != null &&
+              Number.isFinite(intrinsicValue) &&
+              intrinsicValue >= 0 &&
+              stocks[market][symbol]
+            ) {
+              stocks[market][symbol].intrinsicValue = parseFloat(
+                intrinsicValue.toFixed(2),
+              );
+              stocks[market][symbol].intrinsicDate = "import";
+            }
             continue;
           }
 
@@ -2172,6 +2204,17 @@
             bought,
             id: Date.now() + i + imported,
           });
+
+          if (
+            intrinsicValue != null &&
+            Number.isFinite(intrinsicValue) &&
+            intrinsicValue >= 0
+          ) {
+            stocks[market][symbol].intrinsicValue = parseFloat(
+              intrinsicValue.toFixed(2),
+            );
+            stocks[market][symbol].intrinsicDate = "import";
+          }
 
           imported++;
           symbolsToRefresh.add(symbol);
